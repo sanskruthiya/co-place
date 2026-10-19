@@ -1,0 +1,15 @@
+{
+  "name": "co-place-deployment",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:kashiwa": "node scripts/build-kashiwa.mjs",
+    "check:kashiwa": "npm run build:kashiwa && wrangler deploy --dry-run --config sites/kashiwa/wrangler.jsonc",
+    "seed:r2:kashiwa": "node scripts/seed-kashiwa-r2.mjs",
+    "dev:kashiwa": "npm run build:kashiwa && wrangler dev --config sites/kashiwa/wrangler.jsonc",
+    "deploy:kashiwa": "npm run build:kashiwa && wrangler deploy --config sites/kashiwa/wrangler.jsonc"
+  },
+  "devDependencies": {
+    "wrangler": "4.149.0"
+  }
+}

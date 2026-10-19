@@ -1,0 +1,54 @@
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Wrangler
+.wrangler/
+.dev.vars
+.dev.vars.local
+.dev.vars.*.local
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+sites/*/dist/
+sites/*/.dist-tmp/
+
+# TypeScript generated types
+types.d.ts
+env.d.ts
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Editor/IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Large local assets
+r2-assets/
+
+# Devin agent environment
+.agents/
+skills-lock.json
+
+# Internal planning documents
+site-structure/

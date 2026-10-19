@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+        <meta name="description" content="Interactive world map showing day and night regions, terminator line, and timezone information. Find sunrise, sunset times and local time for any location on Earth." />
+        
+        <!-- SEO -->
+        <meta name="keywords" content="day night map, terminator line, world time zones, sunrise sunset calculator, earth visualization, interactive map" />
+        <meta name="author" content="sanskruthiya" />
+        <meta property="og:title" content="ChronoGlobe - Explore Local Time, Sunrise & Sunset, and the Day-Night Line Worldwide" />
+        <meta property="og:description" content="Interactive world map showing day and night regions, terminator line, and timezone information. Find sunrise, sunset times and local time for any location." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://kashiwa.co-place.com/chronoglobe/" />
+        <meta property="og:image" content="https://kashiwa.co-place.com/chronoglobe/app/images/og-image.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@CoPlaceKashiwa" />
+        
+        <!-- PWA -->
+        <meta name="theme-color" content="#1a1a1a" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="application-name" content="ChronoGlobe" />
+        <meta name="apple-mobile-web-app-title" content="ChronoGlobe" />
+        
+        <!-- Accessibility -->
+        <meta name="color-scheme" content="dark light" />
+        
+        <title>ChronoGlobe - Explore Local Time, Sunrise & Sunset, and the Day-Night Line Worldwide</title>
+        
+        <!-- Cache control -->
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta http-equiv="Pragma" content="no-cache" />
+        <meta http-equiv="Expires" content="0" />
+        
+        <!-- Favicon -->
+        <link rel="icon" type="image/png" sizes="64x64" href="app/images/favicon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="app/images/apple-touch-icon.png" />
+        
+        <!-- Main script -->
+        <script defer src="app/main.js?v=20250504"></script>
+    </head>
+    <body>
+        <main>
+            <!-- Skip to main content for screen readers -->
+            <a href="#map" class="skip-link">Skip to map</a>
+            
+            <!-- Main map container with ARIA labels -->
+            <div id="map" 
+                 role="application" 
+                 aria-label="Interactive world map showing day and night regions"
+                 tabindex="0">
+            </div>
+            
+            <!-- Accessibility announcement region for dynamic updates -->
+            <div id="a11y-announcer" 
+                 class="visually-hidden" 
+                 role="status" 
+                 aria-live="polite">
+            </div>
+        </main>
+        
+        <!-- No-JavaScript fallback -->
+        <noscript>
+            <div class="no-js-message">
+                <p>This application requires JavaScript to show the interactive day-night map.</p>
+                <p>Please enable JavaScript or use a browser that supports it.</p>
+            </div>
+        </noscript>
+    </body>
+</html>

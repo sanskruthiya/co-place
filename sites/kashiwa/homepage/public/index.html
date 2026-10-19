@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="柏たなか在住の管理人が、日常生活の中で作成した地域情報・オープンデータ地図のポータルです。">
+  <meta name="theme-color" content="#23634b">
+  <meta property="og:title" content="柏たなかマップログ">
+  <meta property="og:description" content="日常から生まれた、地域情報とオープンデータの地図を集めています。">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="./image/landing.png">
+  <title>柏たなかマップログ</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+  <link rel="manifest" href="./site.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./main.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へ移動</a>
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="柏たなかマップログ トップ">
+      <img src="./header-icon.png" width="54" height="54" alt="">
+      <span>柏たなかマップログ</span>
+    </a>
+    <nav aria-label="メインナビゲーション">
+      <a href="#maps">地図一覧</a>
+      <a href="#about">このサイトについて</a>
+      <a href="#contact">お問い合わせ</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-shapes" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="hero-inner">
+        <div class="hero-visual">
+          <img src="./image/landing.png" width="1280" height="594" alt="地図とまちを描いたイラスト">
+        </div>
+        <div class="hero-content">
+          <p class="eyebrow">MAPS MADE FROM EVERYDAY LIFE</p>
+          <h1 id="hero-title"><span class="title-place">柏たなか</span><span class="title-main">マップログ</span></h1>
+          <div class="route-line" aria-hidden="true"><i></i><span></span><b></b></div>
+          <p>柏たなか在住の管理人が、日常生活の中で作成した地域情報・オープンデータ地図のポータルです。</p>
+          <a class="button button-primary" href="#maps">地図を見てみる <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section maps-section" id="maps" aria-labelledby="maps-title">
+      <div class="section-heading">
+        <p class="eyebrow">MAP COLLECTION</p>
+        <h2 id="maps-title">地図とツール</h2>
+        <p>身近なまちの情報から、日本や世界を眺める地図まで。</p>
+      </div>
+      <h3 class="group-heading"><span></span>マップ</h3>
+      <div class="map-grid">
+        <article class="map-card featured">
+          <a href="./chiblo/">
+            <img src="./image/chiblo.jpg" width="720" height="480" loading="lazy" alt="ちーぶろマップのイメージ">
+            <div class="card-body"><p class="area">柏・流山周辺</p><h3>ちーぶろマップ</h3><p>地域ブログで紹介されたお店やスポットを、記事と一緒に楽しめる地図です。</p><span class="card-link">地図を開く →</span></div>
+          </a>
+        </article>
+        <article class="map-card text-card tone-blue">
+          <a href="./tamap/">
+            <div class="card-graphic" aria-hidden="true"><span>交通事故</span><strong>MAP</strong></div>
+            <div class="card-body"><p class="area">日本全国</p><h3>交通事故発生箇所マップ</h3><p>交通事故発生箇所のオープンデータを地図上で確認できます。</p><span class="card-link">地図を開く →</span></div>
+          </a>
+        </article>
+        <article class="map-card">
+          <a href="./chibakun/">
+            <img src="./image/chibakunmap.png" width="720" height="480" loading="lazy" alt="チーバくんマップのイメージ">
+            <div class="card-body"><p class="area">千葉県</p><h3>チーバくんマップ</h3><p>チーバくんを地図に重ねて、千葉県内の場所を楽しく探せるウェブ地図です。</p><span class="card-link">地図を開く →</span></div>
+          </a>
+        </article>
+        <article class="map-card">
+          <a href="./nursery/">
+            <img src="./image/nursery.jpg" width="720" height="480" loading="lazy" alt="柏市の保育園・幼稚園マップのイメージ">
+            <div class="card-body"><p class="area">柏市</p><h3>保育園・幼稚園マップ</h3><p>保育施設や子育て施設の場所、施設情報などをまとめた地図です。</p><span class="card-link">地図を開く →</span></div>
+          </a>
+        </article>
+        <article class="map-card">
+          <a href="./nursery/capacity/">
+            <img src="./image/capacity.png" width="720" height="480" loading="lazy" alt="保育園受入予定人数マップのイメージ">
+            <div class="card-body"><p class="area">柏市</p><h3>保育園受入予定人数マップ</h3><p>2026年4月入園に向けた、保育園等の受入予定人数を確認できます。</p><span class="card-link">地図を開く →</span></div>
+          </a>
+        </article>
+        <article class="map-card">
+          <a href="./shelter/">
+            <img src="./image/sheltermap.png" width="720" height="480" loading="lazy" alt="柏市防災避難場所マップのイメージ">
+            <div class="card-body"><p class="area">柏市</p><h3>防災避難場所マップ</h3><p>柏市内の緊急避難場所、避難所、広域避難場所を確認できる地図です。</p><span class="card-link">地図を開く →</span></div>
+          </a>
+        </article>
+        <article class="map-card">
+          <a href="./cityplan/">
+            <img src="./image/cityplan.png" width="720" height="480" loading="lazy" alt="人口と都市計画、安全のマップのイメージ">
+            <div class="card-body"><p class="area">柏市</p><h3>人口と都市計画、安全のマップ</h3><p>人口、都市計画、防災など、まちを知るための情報を重ねて見られます。</p><span class="card-link">地図を開く →</span></div>
+          </a>
+        </article>
+        <article class="map-card">
+          <a href="./folktale/">
+            <img src="./image/folktale.jpg" width="720" height="480" loading="lazy" alt="柏市むかしばなしマップのイメージ">
+            <div class="card-body"><p class="area">柏市</p><h3>むかしばなしマップ</h3><p>柏市内に伝わる昔話を、ゆかりの場所とともにたどる地図です。</p><span class="card-link">地図を開く →</span></div>
+          </a>
+        </article>
+        <article class="map-card">
+          <a href="./history/">
+            <img src="./image/history.png" width="720" height="480" loading="lazy" alt="柏市時系列変化マップのイメージ">
+            <div class="card-body"><p class="area">柏市</p><h3>時系列変化マップ</h3><p>昔と今の地図を見比べながら、柏市のまちの変化をたどれます。</p><span class="card-link">地図を開く →</span></div>
+          </a>
+        </article>
+        <article class="map-card text-card tone-coral">
+          <a href="./tamap-en/">
+            <div class="card-graphic" aria-hidden="true"><span>TRAFFIC ACCIDENT</span><strong>JAPAN</strong></div>
+            <div class="card-body"><p class="area">Japan / English</p><h3>Traffic Accident Map</h3><p>Explore traffic accident locations across Japan in an English interface.</p><span class="card-link">Open map →</span></div>
+          </a>
+        </article>
+        <article class="map-card text-card tone-night">
+          <a href="./chronoglobe/">
+            <div class="card-graphic" aria-hidden="true"><span>DAY &amp; NIGHT</span><strong>ChronoGlobe</strong></div>
+            <div class="card-body"><p class="area">世界</p><h3>ChronoGlobe</h3><p>世界の現地時刻、日の出・日の入り、昼夜の境界を地球上で眺められます。</p><span class="card-link">地図を開く →</span></div>
+          </a>
+        </article>
+        <article class="map-card text-card tone-purple">
+          <a href="./tsukuba/">
+            <div class="card-graphic" aria-hidden="true"><span>PLATEAU 3D</span><strong>つくば</strong></div>
+            <div class="card-body"><p class="area">つくば市</p><h3>用途地域・3D都市モデル</h3><p>用途地域とPLATEAUの3D都市モデルを重ねて確認できる地図です。</p><span class="card-link">地図を開く →</span></div>
+          </a>
+        </article>
+      </div>
+      <h3 class="group-heading"><span></span>その他のツール</h3>
+      <div class="map-grid">
+        <article class="map-card text-card tone-yellow">
+          <a href="./piyomiru/">
+            <div class="card-graphic" aria-hidden="true"><span>育児記録</span><strong>ぴよミル</strong></div>
+            <div class="card-body"><p class="area">データ可視化</p><h3>ぴよログ可視化ツール</h3><p>育児記録アプリ「ぴよログ」の記録を見やすく可視化するツールです。</p><span class="card-link">ツールを開く →</span></div>
+          </a>
+        </article>
+      </div>
+    </section>
+
+    <section class="section about-section" id="about" aria-labelledby="about-title">
+      <div class="about-mark" aria-hidden="true">↗</div>
+      <div><p class="eyebrow">ABOUT</p><h2 id="about-title">このサイトについて</h2><p>柏たなかで暮らす管理人が、日々の生活で気になったことや、見つけたオープンデータをきっかけに地図を作っています。地図ごとに対象地域もテーマもさまざま。暮らしやまちを眺める小さなきっかけになればうれしいです。</p></div>
+    </section>
+
+    <section class="section contact-section" id="contact" aria-labelledby="contact-title">
+      <div class="contact-intro"><p class="eyebrow">CONTACT</p><h2 id="contact-title">お問い合わせ</h2><p>地図についてのご意見やご感想など、お気軽にお寄せください。</p></div>
+      <form class="contact-form" action="https://formspree.io/f/mpwjnvdr" method="post" data-contact-form>
+        <div class="field"><label for="name">お名前 <span>任意</span></label><input id="name" name="name" type="text" autocomplete="name"></div>
+        <div class="field"><label for="email">メールアドレス <b>必須</b></label><input id="email" name="email" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="message">お問い合わせ内容 <b>必須</b></label><textarea id="message" name="message" rows="6" required></textarea></div>
+        <div class="honeypot" aria-hidden="true"><label for="company">会社名</label><input id="company" name="_gotcha" type="text" tabindex="-1" autocomplete="off"></div>
+        <button class="button button-submit" type="submit">送信する <span aria-hidden="true">→</span></button>
+        <p class="form-status" role="status" aria-live="polite" data-form-status></p>
+      </form>
+    </section>
+  </main>
+
+  <footer><p>© 2026 柏たなかマップログ</p></footer>
+</body>
+</html>

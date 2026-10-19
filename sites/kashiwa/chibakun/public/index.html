@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ja">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="initial-scale=1, user-scalable=no,maximum-scale=1,width=device-width" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="description" content="千葉県に住む不思議ないきもの、チーバくんの姿と千葉県の形を地図上にできるだけぴったり重ねたマップ。地図上に表示されたチーバくんと駅名や地名を照らし合わせたり、いまチーバくんのどこにいる？をわかりやすく表示します。非公式ファンアートとなります。">
+        <title>チーバくんマップ - 千葉県場所当て地図</title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <div id="map-setting" class="setting-overlay top">
+            <label class="tLabel">背景地図選択</label>
+            <select id="basemap-id" name="basemap-id" class="basemap-select"></select>
+            <hr>
+            <label class="tLabel">情報レイヤ追加</label>
+            <div id="bx-layer" class="setting-layer"></div>   
+            <hr>
+            <label class="tLabel">チーバくん透明度調整</label>
+            <div id="bx-setting" class="setting-slider"></div>
+        </div>
+        <div id="buttons">
+            <button type="button" class="btnctrl" id="b_description">このマップ<br>について</button>
+            <button type="button" class="btnctrl" id="b_setting">表示設定<br>メニュー</button>
+            <button type="button" class="btnctrl" id="b_location">現在地を<br>ピン留め</button>
+            <button type="button" class="btnctrl" id="b_quiz">クイズ<br>モード</button>
+            <button type="button" class="btnctrl" id="b_oddeke">おでかけ<br>モード</button>
+        </div>
+        <div id="oddeke-controls" class="map-overlay" style="display:none;">
+            <div class="oddeke-header">
+                <span class="oddeke-title">チーバくんを移動させよう</span>
+                <button type="button" id="oddeke-toggle" class="oddeke-toggle-btn" title="縮小する">▼</button>
+            </div>
+            <div class="oddeke-body">
+                <div class="oddeke-buttons">
+                    <button type="button" class="oddeke-btn" data-lng="139.6917" data-lat="35.6895">東京</button>
+                    <button type="button" class="oddeke-btn" data-lng="135.5022" data-lat="34.6937">大阪</button>
+                    <button type="button" class="oddeke-btn" data-lng="141.3545" data-lat="43.0618">札幌</button>
+                    <button type="button" class="oddeke-btn" data-lng="130.4017" data-lat="33.5902">博多</button>
+                    <button type="button" class="oddeke-btn" data-lng="138.7270" data-lat="35.3606">富士山</button>
+                </div>
+                <p class="oddeke-hint">地図をクリックして自由に移動先を選ぶこともできます。</p>
+                <button type="button" id="oddeke-reset">千葉県の位置に戻す</button>
+            </div>
+        </div>
+        <div id="description" class="map-overlay"></div>
+        <div id="quiz-container" class="map-overlay">
+            <div id="quiz-question"></div>
+            <div id="quiz-result"></div>
+            <div class="quiz-controls">
+                <button type="button" id="quiz-next" style="display:none;">次の問題</button>
+                <span id="quiz-result-link" class="quiz-result-link" style="display:none;">結果を出力する</span>
+            </div>
+        </div>
+        <div id="icon-loader"></div>
+        
+        <!-- クイズ結果モーダル -->
+        <div id="quiz-modal" class="quiz-modal">
+            <div class="quiz-modal-content">
+                <div class="quiz-modal-header">
+                    <h3>クイズ結果レポート</h3>
+                    <span class="quiz-modal-close">&times;</span>
+                </div>
+                <div class="quiz-summary" id="quiz-summary">
+                    <!-- 結果概要がここに入ります -->
+                </div>
+                <ul class="quiz-history-list" id="quiz-history-list">
+                    <!-- クイズの履歴がここに入ります -->
+                </ul>
+            </div>
+        </div>
+        
+        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+        <script src="app/main.js?20260302"></script>
+    </body>
+</html>

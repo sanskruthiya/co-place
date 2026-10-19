@@ -1,0 +1,29 @@
+{
+  "name": "ちーぶろマップ",
+  "short_name": "ちーぶろマップ",
+  "description": "東葛・TX沿線の地域ブログ記事まとめマップ",
+  "start_url": "/chiblo/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4a90e2",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/chiblo/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/chiblo/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/chiblo/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
