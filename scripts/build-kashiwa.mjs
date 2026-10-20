@@ -79,7 +79,8 @@ try {
     const relativeProject = path.relative(siteRoot, projectDirectory);
     const isHomepage = relativeProject === "homepage";
     const isLegacyRoot = relativeProject === "";
-    const destination = isHomepage ? temporaryRoot : path.join(temporaryRoot, relativeProject);
+    const publicPath = relativeProject === path.join("nursery", "capacity") ? "nursery-capacity" : relativeProject;
+    const destination = isHomepage ? temporaryRoot : path.join(temporaryRoot, publicPath);
     const ignoredEntries = isLegacyRoot ? new Set(["index.html", "_app"]) : new Set();
     await copyDirectory(publicDirectory, destination, ignoredEntries);
     console.log(`${path.relative(root, publicDirectory)} -> ${path.relative(root, destination)}`);

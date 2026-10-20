@@ -49,6 +49,12 @@ nav a:hover::after { transform: scaleX(1); }
 .route-line span { flex: 1; height: 3px; margin-left: 4px; border-radius: 999px; background: linear-gradient(90deg, var(--primary), var(--teal)); }
 .route-line b { position: relative; flex: none; width: 18px; height: 18px; margin-left: 2px; border-radius: 50% 50% 50% 0; background: var(--teal); transform: rotate(-45deg); }
 .route-line b::after { position: absolute; width: 6px; height: 6px; top: 6px; left: 6px; border-radius: 50%; content: ""; background: #fff; }
+.hero-railway { position: absolute; right: 0; bottom: 52px; left: 0; z-index: 20; height: 86px; overflow: hidden; pointer-events: none; }
+.track { position: absolute; right: 0; bottom: 0; left: 0; height: 32px; }
+.track .rails { position: absolute; top: 0; right: 0; left: 0; height: 100%; border-top: 5px solid #475569; border-bottom: 5px solid #475569; }
+.track .ties { position: absolute; top: 3px; right: 0; bottom: 3px; left: 0; background: repeating-linear-gradient(90deg, #94a3b8 0 16px, transparent 16px 44px); }
+.train { position: absolute; bottom: 8px; left: -220px; z-index: 30; filter: drop-shadow(0 10px 18px rgba(2, 132, 199, .3)); animation: train-arrive 2.4s cubic-bezier(.22, 1, .36, 1) .4s forwards; }
+@keyframes train-arrive { to { left: 42%; transform: translateX(-50%); } }
 .eyebrow { margin: 0; color: var(--primary); font-size: .75rem; font-weight: 800; letter-spacing: .17em; }
 .hero-shapes { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .hero-shapes span { position: absolute; display: block; border-radius: 38px; background: rgba(186, 230, 253, .35); animation: float 14s ease-in-out infinite; }
@@ -68,14 +74,23 @@ nav a:hover::after { transform: scaleX(1); }
 .group-heading { display: flex; align-items: center; gap: 12px; margin: 0 0 24px; color: #0f172a; font-size: 1.15rem; font-weight: 800; }
 .group-heading span { width: 34px; height: 3px; border-radius: 999px; background: linear-gradient(90deg, var(--primary), var(--teal)); }
 .group-heading:not(:first-of-type) { margin-top: 48px; }
-.map-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+.map-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; counter-reset: station; }
+.map-card { --route-color: #0284c7; counter-increment: station; }
+.map-card:nth-child(3n + 2) { --route-color: #0f766e; }
+.map-card:nth-child(3n) { --route-color: #7c3aed; }
+.map-grid:last-child .map-card { --route-color: #b45309; }
 .map-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-sm); transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
 .map-card:hover { border-color: #bae6fd; transform: translateY(-5px); box-shadow: var(--shadow-md); }
 .map-card a { height: 100%; display: flex; flex-direction: column; text-decoration: none; }
 .map-card img, .card-graphic { width: 100%; height: 170px; object-fit: cover; background: var(--surface-soft); }
 .card-body { flex: 1; display: flex; flex-direction: column; padding: 24px; }
-.area { width: fit-content; margin: 0 0 10px; color: var(--primary-dark); font-size: .75rem; font-weight: 700; }
-.card-body h3 { margin: 0 0 9px; color: #0f172a; font-size: 1.18rem; line-height: 1.45; }
+.area { width: fit-content; margin: 0 0 14px; display: inline-flex; align-items: center; gap: 12px; color: #475569; font-size: .75rem; font-weight: 700; }
+.area::before { flex: none; width: 46px; height: 46px; display: grid; place-items: center; border: 3px solid var(--route-color); border-radius: 50%; content: counter(station, decimal-leading-zero); content: counter(station, decimal-leading-zero) / ""; background: #fff; color: var(--route-color); font-size: .8rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.04em; line-height: 1; }
+.map-grid:last-child .area::before { content: "T" counter(station, decimal-leading-zero); content: "T" counter(station, decimal-leading-zero) / ""; }
+.card-body h3 { position: relative; margin: 0 0 16px; padding-bottom: 20px; border-bottom: 7px solid var(--route-color); color: #0f172a; font-size: 1.18rem; font-weight: 800; line-height: 1.45; letter-spacing: .015em; }
+.card-body h3::after { position: absolute; right: 2px; bottom: -10px; width: 13px; height: 13px; border-top: 3px solid #fff; border-right: 3px solid #fff; content: ""; transform: rotate(45deg); }
+.map-card .card-link { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--line); color: var(--route-color); }
+.map-card:hover .area::before { background: var(--route-color); color: #fff; }
 .card-body > p:not(.area) { margin: 0 0 20px; color: var(--muted); font-size: .9rem; }
 .card-link { margin-top: auto; color: var(--primary); font-size: .86rem; font-weight: 700; }
 .card-graphic { display: flex; flex-direction: column; justify-content: flex-end; padding: 28px; color: #fff; background: linear-gradient(145deg, #38bdf8, #0369a1); }
@@ -137,6 +152,8 @@ footer { padding: 30px 24px; border-top: 1px solid var(--line); color: #64748b; 
   .route-line { margin-right: auto; margin-left: auto; }
   .hero-visual { position: static; order: 2; width: 100%; margin-top: 30px; }
   .hero-visual img { width: 100%; height: auto; }
+  .hero-railway { bottom: 28px; height: 60px; }
+  .train svg { width: 130px; height: 50px; }
   .hero-shapes span:nth-child(3) { display: none; }
   .section { width: calc(100% - 32px); padding: 72px 0; }
   .maps-section { width: 100%; padding-right: 16px; padding-left: 16px; }

@@ -1,18 +1,18 @@
-const REDIRECTS = {
-  "/cmap/ta-jc": "/tamap",
-  "/cmap/ta-jc/": "/tamap/",
-  "/cmap/ta-en": "/tamap-en",
-  "/cmap/ta-en/": "/tamap-en/",
-  "/cmap/piyomiru": "/piyomiru",
-  "/cmap/piyomiru/": "/piyomiru/",
-  "/cmap/terminator": "/chronoglobe",
-  "/cmap/terminator/": "/chronoglobe/",
-  "/cmap/tsukuba": "/tsukuba",
-  "/cmap/tsukuba/": "/tsukuba/",
-};
+const REDIRECTS = new Map([
+  ["/cmap/ta-jc", "/tamap"],
+  ["/cmap/ta-en", "/tamap-en"],
+  ["/cmap/piyomiru", "/piyomiru"],
+  ["/cmap/terminator", "/chronoglobe"],
+  ["/cmap/tsukuba", "/tsukuba"],
+  ["/nursery/capacity", "/nursery-capacity"],
+]);
 
 function redirectTarget(pathname) {
-  return REDIRECTS[pathname] ?? null;
+  for (const [source, target] of REDIRECTS) {
+    if (pathname === source) return `${target}/`;
+    if (pathname.startsWith(`${source}/`)) return target + pathname.slice(source.length);
+  }
+  return null;
 }
 
 function isR2Path(pathname) {
@@ -97,7 +97,8 @@ export default {
     const target = redirectTarget(url.pathname);
 
     if (target) {
-      return Response.redirect(`${url.origin}${target}`, 301);
+      url.pathname = target;
+      return Response.redirect(url.href, 301);
     }
 
     if (isR2Path(url.pathname)) {
