@@ -1,0 +1,2 @@
+/earthquakes https://kashiwa.co-place.com/earthquakes/ 301
+/earthquakes/* https://kashiwa.co-place.com/earthquakes/:splat 301

@@ -1,0 +1,107 @@
+html, body {
+    margin: 0; height: 100%; width: 100%; background-color: lightblue;
+    padding-bottom: 20px;
+    -webkit-text-size-adjust : 100%;
+}
+
+#header {
+    top:0; height:1px;
+}
+
+.navbar {
+    height: 30px;
+    background: #555;
+}
+
+#map {
+    height: 100%; bottom:0px; top:0px;
+    background-color:lightblue;
+}
+
+.dropdown {
+    font-family: sans-serif;
+    font-weight: 400;
+    transform: scale(1.0, 1);
+}
+
+h1 {
+    color:#333; font-family: serif;
+}
+
+h2 {
+    color:#333; font-family: serif;
+}
+
+h3 {
+    color:#555; font-family: serif;
+}
+
+h4 {
+    color:#333; font-family: serif;
+}
+
+h5 {
+    color:#555; font-family: serif;
+}
+
+th {
+    text-align: left;
+    vertical-align: top;
+}
+
+hr {
+    background-color: #333;
+}
+hr.headline {
+    border: 0;
+    border-top: 1px solid #555;
+}
+
+.slider-wrapper {
+    width: 305px;
+    position: relative;
+    top: 40px;
+    right: 0px;
+}
+
+label.sliderstyle01 {
+    display:block;
+    float:right;
+    width:300px;
+    height:45px;
+    font-size: 14px; font-weight: 600; font-family: serif;
+    text-shadow:3px 3px 2px #555;
+    transform: scale(1.0, 1);
+    text-decoration: none;
+    position: relative;
+    top: 0px;
+    right:3px;
+    /*margin: 0px 5px 0px 5px;*/
+    padding: 10px 15px 15px 20px;
+    color: rgba(255,255,255,1);/*padding around the label: top-right-bottom-left*/
+    background: rgba(0, 10, 10, 0.5);/*background color*/
+    border-left: solid 7px orangered;/*line border at the left-side*/
+}
+
+p.nav-title {
+    color:#ffffff;
+    font-size: 12px; font-weight: normal; font-family: serif;
+    padding: 20px 5px 0px 5px;
+}
+
+p.tipstyle01 {
+    color:#333; font-size: 21px; font-weight: normal; font-family: serif;
+}
+
+p.tipstyle02 {
+    color:#333; font-size: 12px; font-weight: normal; font-family: serif;
+}
+
+p.tipstyle03 {
+    color:#777; font-size: 12px; font-weight: normal; font-family: serif;
+}
+
+p.tipstyle04 {
+    color:#333; font-size: 12px; font-weight: 600; font-family: serif;
+    padding: 10px 5px 0px 5px;
+}
