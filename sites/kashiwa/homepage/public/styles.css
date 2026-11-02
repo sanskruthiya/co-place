@@ -100,6 +100,7 @@ nav a:hover::after { transform: scaleX(1); }
 .tone-yellow .card-graphic { color: #713f12; background: linear-gradient(145deg, #fde68a, #f59e0b); }
 .tone-night .card-graphic { background: radial-gradient(circle at 76% 20%, #fde68a 0 7%, transparent 8%), linear-gradient(145deg, #334155, #0f172a); }
 .tone-purple .card-graphic { background: linear-gradient(145deg, #a78bfa, #5b21b6); }
+.tone-quake .card-graphic { background: linear-gradient(145deg, #fb923c, #b91c1c); }
 
 .about-section { width: 100%; max-width: none; padding: 88px max(24px, calc((100% - 1080px) / 2)); display: grid; grid-template-columns: 150px 1fr; gap: 58px; align-items: center; background: var(--surface-soft); }
 .about-mark { width: 130px; height: 130px; border-radius: 28px; display: grid; place-items: center; color: var(--primary-dark); background: linear-gradient(145deg, var(--primary-soft), #ccfbf1); font-size: 3.7rem; font-weight: 300; transform: rotate(-5deg); }
