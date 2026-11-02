@@ -6,13 +6,16 @@
     "build:kashiwa": "node scripts/build-kashiwa.mjs",
     "check:kashiwa": "npm run build:kashiwa && wrangler deploy --dry-run --config sites/kashiwa/wrangler.jsonc",
     "seed:r2:kashiwa": "node scripts/seed-kashiwa-r2.mjs",
-    "dev:kashiwa": "npm run build:kashiwa && wrangler dev --config sites/kashiwa/wrangler.jsonc",
+    "dev:kashiwa": "node scripts/build-kashiwa.mjs --drafts && wrangler dev --config sites/kashiwa/wrangler.jsonc --assets sites/kashiwa/.preview-dist",
+    "test:articles": "node --test scripts/build-kashiwa-articles.test.mjs",
     "deploy:kashiwa": "npm run build:kashiwa && wrangler deploy --config sites/kashiwa/wrangler.jsonc",
     "dev:co-place": "wrangler dev --config sites/co-place/wrangler.jsonc --port 8790",
     "check:co-place": "wrangler deploy --dry-run --config sites/co-place/wrangler.jsonc",
     "deploy:co-place": "wrangler deploy --config sites/co-place/wrangler.jsonc"
   },
   "devDependencies": {
-    "wrangler": "4.149.0"
+    "markdown-it": "14.3.3",
+    "wrangler": "4.149.0",
+    "yaml": "2.9.1"
   }
 }

@@ -1,13 +1,15 @@
 import { copyFile, mkdir, readdir, rename, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildArticles } from "./build-kashiwa-articles.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const siteRoot = path.join(root, "sites", "kashiwa");
-const outputRoot = path.join(siteRoot, "dist");
-const temporaryRoot = path.join(siteRoot, ".dist-tmp");
+const preview = process.argv.includes("--drafts");
+const outputRoot = path.join(siteRoot, preview ? ".preview-dist" : "dist");
+const temporaryRoot = path.join(siteRoot, preview ? ".preview-tmp" : ".dist-tmp");
 const maxAssetSize = 25 * 1024 * 1024;
-const ignoredDirectories = new Set(["dist", ".dist-tmp", "node_modules", "src"]);
+const ignoredDirectories = new Set(["dist", ".dist-tmp", ".preview-dist", ".preview-tmp", "node_modules", "src"]);
 const copiedFiles = new Map();
 
 async function findPublicDirectories(directory) {
@@ -85,6 +87,11 @@ try {
     await copyDirectory(publicDirectory, destination, ignoredEntries);
     console.log(`${path.relative(root, publicDirectory)} -> ${path.relative(root, destination)}`);
   }
+
+  await buildArticles({ root, outputRoot: temporaryRoot, preview, reserve(relative) {
+    if (copiedFiles.has(relative)) throw new Error(`Duplicate output path ${relative}`);
+    copiedFiles.set(relative, "article generator");
+  } });
 
   await rm(outputRoot, { recursive: true, force: true });
   await rename(temporaryRoot, outputRoot);

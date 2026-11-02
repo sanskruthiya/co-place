@@ -20,6 +20,8 @@ yarn-error.log*
 # Build outputs
 sites/*/dist/
 sites/*/.dist-tmp/
+sites/*/.preview-dist/
+sites/*/.preview-tmp/
 
 # TypeScript generated types
 types.d.ts
@@ -52,3 +54,6 @@ skills-lock.json
 
 # Internal planning documents
 site-structure/
+
+# Private interview notes
+article-materials/*.txt
