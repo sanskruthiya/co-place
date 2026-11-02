@@ -1,60 +1,120 @@
 <!doctype html>
-<html lang="jp">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="initial-scale=1, user-scalable=no,maximum-scale=1,width=device-width">
-        <meta name="mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-capable" content="yes">
-        <meta name="description" content="USGS(米国地質調査所)のデータを参照した世界の地震リアルタイム観測マップです。記載内容や表現に問題等あればご連絡ください。連絡先はInfo-View内に記載しています。This real-time global earthquake map visualizes data from the USGS (United States Geological Survey) Earthquake Hazard Program. If you encounter any issues or have concerns, please contact me through the link provided in the Info-View.">
-        <!-- CSS -->
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-        <link rel="stylesheet" href="app/css/plugin/leaflet.zoomhome.css" />
-        <link rel="stylesheet" href="app/css/plugin/MarkerCluster.css" />
-        <link rel="stylesheet" href="app/css/plugin/MarkerCluster.Default.css" />
-        <link rel="stylesheet" href="app/css/plugin/L.Icon.Pulse.css" />
-        <link rel="stylesheet" href="app/css/plugin/L.Control.SlideMenu.css" />
-        <link rel="stylesheet" href="app/css/control-panel.css" />
-        <link rel="stylesheet" href="app/css/main.css" />
-        <!-- Title -->
-        <title>World Earthquake Map -世界の地震リアルタイム観測マップ</title>
-    </head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FV6J90KCJL"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        
-        gtag('config', 'G-FV6J90KCJL');
-    </script>
-    <body>
-        <div class="control-panel">
-            <div class="period-selector">
-                <button class="period-button" id="periodToggle">
-                    <span>観測期間の設定</span>
-                    <svg class="arrow-icon" viewBox="0 0 24 24">
-                        <path d="M7 10l5 5 5-5z"/>
-                    </svg>
-                </button>
-                <div class="period-menu" id="periodMenu">
-                    <a href="#day" class="period-option">1日以内</a>
-                    <a href="#week" class="period-option">1週間以内</a>
-                    <a href="#month" class="period-option">1ヶ月以内</a>
-                </div>
-            </div>
-            <div class="slider" id="slider-container"></div>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="USGS(米国地質調査所)のデータを参照した世界の地震リアルタイム観測マップです。記載内容や表現に問題等あればご連絡ください。連絡先はInfo-View内に記載しています。This real-time global earthquake map visualizes data from the USGS (United States Geological Survey) Earthquake Hazard Program. If you encounter any issues or have concerns, please contact me through the link provided in the Info-View.">
+  <title>World Earthquake Map -世界の地震リアルタイム観測マップ</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="preconnect" href="https://earthquake.usgs.gov" crossorigin>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha256-YU3qCpj/P06tdPBJGPax0bm6Q1wltfwjsho5TR4+TYc=" crossorigin="">
+  <link rel="stylesheet" href="app/css/style.css">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-FV6J90KCJL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-FV6J90KCJL');
+  </script>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel" id="panel" aria-label="地震情報パネル">
+      <header class="panel-header">
+        <div>
+          <p class="eyebrow">WORLD EARTHQUAKE MAP</p>
+          <h1>世界の地震リアルタイム観測マップ</h1>
         </div>
-        <div id="map">
+        <button class="icon-button" id="infoOpen" type="button" aria-haspopup="dialog" aria-label="このマップについて">i</button>
+      </header>
+
+      <section class="controls" aria-label="表示条件">
+        <div>
+          <p class="control-label" id="periodLabel">観測期間</p>
+          <nav class="segmented" aria-labelledby="periodLabel">
+            <a href="#day" data-period="day">1日</a>
+            <a href="#week" data-period="week">1週間</a>
+            <a href="#month" data-period="month">1ヶ月</a>
+          </nav>
         </div>
 
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-        <script src="app/js/plugin/L.Icon.Pulse.js"></script>
-        <script src="app/js/plugin/leaflet.zoomhome.js"></script>
-        <script src="app/js/plugin/leaflet.markercluster.js"></script>
-        <script src="app/js/plugin/L.Control.SlideMenu.js"></script>
-        <script src="app/js/country.js"></script>
-        <script src="app/js/plate.js"></script>
-        <script src="app/js/main.js?20250425"></script>
-    </body>
+        <div class="magnitude">
+          <label for="magnitude">マグニチュード <output id="magnitudeValue" for="magnitude">5.0</output> 以上</label>
+          <input id="magnitude" type="range" min="4.5" max="7.0" step="0.1" value="5.0">
+          <div class="legend" aria-hidden="true">
+            <span><i class="mag-45"></i>4.5</span>
+            <span><i class="mag-5"></i>5</span>
+            <span><i class="mag-6"></i>6</span>
+            <span><i class="mag-7"></i>7+</span>
+          </div>
+        </div>
+
+        <div class="toggles">
+          <label><input type="checkbox" id="clusterToggle" checked> 近接地震をまとめる</label>
+          <label><input type="checkbox" id="plateToggle" checked> プレート境界</label>
+        </div>
+      </section>
+
+      <div class="status" role="status" aria-live="polite">
+        <p id="summary">読み込み中…</p>
+        <p class="updated"><span id="updated"></span><button class="text-button" id="refresh" type="button">更新</button></p>
+      </div>
+
+      <div class="list-header">
+        <button class="list-toggle" id="listToggle" type="button" aria-expanded="false" aria-controls="quakeListWrap">地震一覧</button>
+        <select id="sort" aria-label="並び順">
+          <option value="time">新しい順</option>
+          <option value="mag">規模の大きい順</option>
+        </select>
+      </div>
+      <div class="list-wrap" id="quakeListWrap">
+        <ol class="quake-list" id="quakeList"></ol>
+      </div>
+    </aside>
+
+    <main class="map" id="map" aria-label="世界地図"></main>
+  </div>
+
+  <dialog class="info" id="info" aria-labelledby="infoTitle">
+    <form method="dialog" class="info-close"><button class="icon-button" aria-label="閉じる">×</button></form>
+    <h2 id="infoTitle">World Earthquake Map</h2>
+    <p>USGS（米国地質調査所）のデータを参照した、世界の地震リアルタイム観測マップです。直近1日〜1ヶ月以内に発生したマグニチュード4.5以上の地震情報を自動的に表示します。</p>
+    <ul>
+      <li>観測期間は1日・1週間・1ヶ月から選べます。</li>
+      <li>スライダーで表示するマグニチュードの下限を調整できます。</li>
+      <li>円の大きさと色は地震の規模を表し、1時間以内に発生した地震は波紋で示します。</li>
+      <li>地図中の線はプレート境界を示します。</li>
+      <li>データは5分ごとに自動で更新されます。</li>
+    </ul>
+    <h3>参照ソース</h3>
+    <dl>
+      <dt>提供元</dt><dd><a href="https://earthquake.usgs.gov" target="_blank" rel="noopener">USGS Earthquake Hazard Program</a></dd>
+      <dt>フィード</dt><dd>Real-time Feed, M4.5+ Earthquakes</dd>
+      <dt>プロパティ</dt><dd>概要: title, url / 場所: place / 規模: mag / 発生日時: time / 深さ: 座標の深度 / 津波: tsunami（1: 海域の大規模地震のため津波情報の確認を推奨, 0: フラグなし）/ 情報の確度: status（reviewed: 確認済み, automatic: 自動解析）</dd>
+    </dl>
+    <h3>お問い合わせ</h3>
+    <p>記載内容や表現に問題等あれば、こちらのフォームから当サイト管理人までお知らせください。</p>
+    <details class="contact">
+      <summary>問い合わせフォームを開く</summary>
+      <form class="contact-form" id="contactForm" action="https://formspree.io/f/mpwjnvdr" method="post">
+        <input type="hidden" name="_source" value="World Earthquake Map">
+        <label>お名前 <span class="optional">任意</span><input name="name" type="text" autocomplete="name"></label>
+        <label>メールアドレス <span class="required">必須</span><input name="email" type="email" autocomplete="email" required></label>
+        <label>お問い合わせ内容 <span class="required">必須</span><textarea name="message" rows="4" required></textarea></label>
+        <input class="honeypot" name="_gotcha" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="submit-button" type="submit">送信する</button>
+        <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
+      </form>
+    </details>
+    <p class="credit">created in July 2018, updated in November 2026</p>
+  </dialog>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" integrity="sha256-Hk4dIpcqOSb0hZjgyvFOP+cEmDXUKKNE/tT542ZbNQg=" crossorigin=""></script>
+  <script src="app/js/main.js?20261102"></script>
+</body>
 </html>
