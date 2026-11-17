@@ -196,6 +196,7 @@ function select(code, fly = true) {
   renderInfo(a); drawScatter();
 }
 
+let lastRow = {};
 function renderInfo(a, cmpCode = null) {
   const el = document.getElementById("info");
   if (a.excluded) {
@@ -227,10 +228,13 @@ function renderInfo(a, cmpCode = null) {
   });
   h += `</table>`;
   el.innerHTML = h;
-  el.querySelectorAll("#nbrs tr[data-code]").forEach(tr => {
-    tr.onclick = () => renderInfo(a, tr.dataset.code);
-    tr.ondblclick = () => select(tr.dataset.code);
-  });
+  const row = e => e.target.closest("#nbrs tr[data-code]");
+  el.onclick = e => {
+    const tr = row(e); if (!tr) return;
+    const c = tr.dataset.code, t = performance.now(), dbl = e.detail > 1 || (c === lastRow.code && t - lastRow.t < 400);
+    lastRow = dbl ? {} : {code: c, t};
+    dbl ? select(c) : renderInfo(a, c);
+  };
 }
 
 function explain(a, b) {
