@@ -25,6 +25,10 @@
   body { margin: 0; font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; font-size: 13px; color: #222; }
   #app { display: grid; grid-template-columns: 1fr 400px; height: 100vh; }
   #map { position: relative; }
+  @media (max-width: 800px) {
+    #app { grid-template-columns: 1fr; grid-template-rows: 60vh auto; height: auto; }
+    #side { border-left: 0; border-top: 1px solid #ddd; overflow: visible; }
+  }
   #side { overflow-y: auto; border-left: 1px solid #ddd; padding: 10px 12px; background: #fafafa; }
   h1 { font-size: 15px; margin: 0 0 6px; }
   .ctrl { display: flex; gap: 6px; margin: 6px 0; align-items: center; flex-wrap: wrap; }
