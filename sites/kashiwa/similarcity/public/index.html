@@ -415,7 +415,10 @@ function initPad() {
 }
 function pad() {
   const sh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sheet-h")) || $("#sheet").getBoundingClientRect().height, narrow = innerWidth <= 760;
-  return { top: narrow ? 120 : 80, bottom: Math.min(sh + 30, innerHeight * .6), left: narrow ? 30 : 380, right: narrow ? 30 : 80 };
+  const p = { top: narrow ? 120 : 80, bottom: Math.min(sh + 30, innerHeight * .6), left: narrow ? 30 : 380, right: narrow ? 30 : 80 };
+  const fit = (a, b, n) => { const k = Math.min(1, Math.max(0, n - 60) / (p[a] + p[b])); p[a] *= k; p[b] *= k; };
+  fit("top", "bottom", innerHeight); fit("left", "right", innerWidth);
+  return p;
 }
 function drawMarkers(a) {
   markers.forEach(m => m.remove()); markers = [];
