@@ -440,7 +440,8 @@ function setSheet(s) {
   if (s === "full" && !$("#about").classList.contains("min")) $("#aboutToggle").click();
 }
 $("#grab").onclick = e => {
-  if (e.target.closest(".examples, [data-clear]")) return;
+  if (e.target.closest("[data-clear]")) return clearSel();
+  if (e.target.closest(".examples")) return;
   const s = $("#sheet").dataset.state;
   setSheet(s === "peek" ? "half" : s === "half" ? "full" : "peek");
 };
@@ -473,7 +474,8 @@ function renderSelected() {
   const s = stabInfo(a.code);
   $("#ttl").innerHTML = `<span class="big" style="background:${color(a)}"></span>
     <div style="min-width:0"><h2>${esc(a.name)}</h2>
-    <div class="sub">${esc(a.pref)}${a.excluded ? "" : ` · 類型: ${esc(TYPES[a.cluster] || "C" + a.cluster)}`}${s ? ` · Top${A.meta.k}の安定度 <b style="color:${s.lv[1]}">${pct(s.st)}（${s.lv[0]}）</b>` : ""}</div></div>`;
+    <div class="sub">${esc(a.pref)}${a.excluded ? "" : ` · 類型: ${esc(TYPES[a.cluster] || "C" + a.cluster)}`}${s ? ` · Top${A.meta.k}の安定度 <b style="color:${s.lv[1]}">${pct(s.st)}（${s.lv[0]}）</b>` : ""}</div></div>
+    <button class="icon-btn" data-clear aria-label="選択を解除" title="選択を解除"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 2l8 8M10 2l-8 8"/></svg></button>`;
   if (a.excluded) {
     $("#left").innerHTML = `<div class="sec-h"><h3>類似度の計算から除外</h3></div><p class="note">${esc(A.meta.excluded_note)}。2020年の統計が平常時と大きく異なるため、類似先は表示していません。</p>`;
     $("#right").innerHTML = profileTable(a, null);
