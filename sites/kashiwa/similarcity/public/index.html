@@ -445,7 +445,7 @@ $("#grab").onclick = e => {
   const s = $("#sheet").dataset.state;
   setSheet(s === "peek" ? "half" : s === "half" ? "full" : "peek");
 };
-$("#grab").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#grab").click(); } };
+$("#grab").onkeydown = e => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); $("#grab").click(); } };
 addEventListener("resize", () => setSheet($("#sheet").dataset.state));
 
 function renderEmpty() {
