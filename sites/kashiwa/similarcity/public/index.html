@@ -592,6 +592,7 @@ function renderSugg() {
 }
 q.addEventListener("input", () => { hits = search(q.value); hi = 0; renderSugg(); });
 q.addEventListener("keydown", e => {
+  if (e.isComposing || e.keyCode === 229) return;
   if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); if (hits.length) { hi = (hi + (e.key === "ArrowDown" ? 1 : -1) + hits.length) % hits.length; renderSugg(); } }
   else if (e.key === "Enter") { if (hits[hi]) pick(hits[hi].code); }
   else if (e.key === "Escape") { q.value = ""; hits = []; renderSugg(); q.blur(); }
