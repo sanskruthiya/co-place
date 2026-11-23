@@ -414,7 +414,7 @@ function initPad() {
   return narrow ? { top: 130, bottom: 90, left: 10, right: 10 } : { top: 30, bottom: 100, left: 300, right: 60 };
 }
 function pad() {
-  const sh = $("#sheet").getBoundingClientRect().height, narrow = innerWidth <= 760;
+  const sh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sheet-h")) || $("#sheet").getBoundingClientRect().height, narrow = innerWidth <= 760;
   return { top: narrow ? 120 : 80, bottom: Math.min(sh + 30, innerHeight * .6), left: narrow ? 30 : 380, right: narrow ? 30 : 80 };
 }
 function drawMarkers(a) {
