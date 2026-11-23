@@ -587,7 +587,7 @@ function renderSugg() {
   const open = q.value.trim() !== "";
   sugg.classList.toggle("open", open); q.setAttribute("aria-expanded", open);
   if (!open) return;
-  sugg.innerHTML = hits.length ? hits.map((a, i) => `<button role="option" aria-selected="${i === hi}" data-code="${a.code}"><span class="dot" style="background:${color(a)}"></span>${esc(a.name)}<span class="pref">${esc(a.pref)}</span></button>`).join("")
+  sugg.innerHTML = hits.length ? hits.map((a, i) => `<button role="option" tabindex="-1" aria-selected="${i === hi}" data-code="${a.code}"><span class="dot" style="background:${color(a)}"></span>${esc(a.name)}<span class="pref">${esc(a.pref)}</span></button>`).join("")
     : `<div class="empty">該当する市区町村がありません</div>`;
 }
 q.addEventListener("input", () => { hits = search(q.value); hi = 0; renderSugg(); });
