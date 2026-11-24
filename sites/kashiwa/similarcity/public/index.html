@@ -31,6 +31,7 @@
   --sans: "Inter", "Noto Sans JP", "Hiragino Sans", system-ui, sans-serif;
 }
 * { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--tx); font: 13px/1.55 var(--sans); -webkit-font-smoothing: antialiased; overflow: hidden; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 a { color: #9cc7ff; }
@@ -117,13 +118,18 @@ kbd { font: 11px var(--sans); color: var(--mut); border: 1px solid var(--line2);
 .card.on .rk { color: var(--tx); }
 .card .nm { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; font-size: 13.5px; }
 .card .nm span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card .meta { grid-column: 2; display: flex; gap: 10px; color: var(--mut); font-size: 11px; }
+.card .meta { grid-column: 2; display: flex; flex-wrap: wrap; gap: 0 10px; min-width: 0; color: var(--mut); font-size: 11px; }
+.card .meta span { white-space: nowrap; }
 .card .meter { grid-column: 2 / 4; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .07); overflow: hidden; }
 .card .meter i { display: block; height: 100%; border-radius: 2px; }
 .card .go { grid-row: 1 / 3; grid-column: 3; opacity: 0; }
 .card:hover .go, .card.on .go { opacity: 1; }
 .stab { display: inline-flex; align-items: center; gap: 6px; }
 .note { color: var(--mut); font-size: 11.5px; line-height: 1.6; }
+.lead { margin: 0 0 14px; font-size: 13px; line-height: 1.75; color: var(--tx); }
+.prose { margin: 0 0 14px; padding: 12px 14px; border: 1px solid var(--line); border-left: 3px solid var(--line2); border-radius: 10px; background: rgba(255,255,255,.025); }
+.prose p { margin: 0; font-size: 13px; line-height: 1.8; }
+.prose .pn { margin-top: 6px; font-size: 11px; line-height: 1.5; color: var(--mut); }
 
 .vs { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
 .vs .who { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
@@ -174,6 +180,8 @@ dialog[open] { display: flex; flex-direction: column; }
 .steps li { counter-increment: s; position: relative; padding: 10px 12px 10px 44px; border: 1px solid var(--line); border-radius: 11px; }
 .steps li::before { content: counter(s); position: absolute; left: 12px; top: 10px; width: 22px; height: 22px; border-radius: 50%; background: rgba(255, 255, 255, .08); display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--tx); }
 .steps b { color: var(--tx); }
+.tw { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 6px 0 10px; }
+.tw .tbl { margin: 0; }
 .tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 6px 0 10px; }
 .tbl th, .tbl td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
 .tbl th { color: var(--mut); font-weight: 600; font-size: 11.5px; }
@@ -188,6 +196,9 @@ dialog[open] { display: flex; flex-direction: column; }
 .callout { border: 1px solid rgba(243, 183, 79, .3); background: rgba(243, 183, 79, .06); border-radius: 11px; padding: 10px 14px; margin: 10px 0; }
 .callout p { margin: 4px 0; }
 
+/* ---- タッチ端末: 16px 未満の入力欄は iOS がフォーカス時に拡大する ---- */
+@media (pointer: coarse) { #searchbox input { font-size: 16px; } }
+
 /* ---- 狭い画面 ---- */
 @media (max-width: 760px) {
   #about { left: 10px; right: 10px; top: 10px; width: auto; padding: 12px 14px; }
@@ -200,6 +211,12 @@ dialog[open] { display: flex; flex-direction: column; }
   .cmpgrid { grid-template-columns: 1fr; }
   .maplibregl-ctrl-top-right { display: none; }
   .prof .lb { width: 42%; }
+  #sheet .grab { padding-left: 14px; gap: 8px; }
+  #sheet .ttl { gap: 10px; }
+  #sheet .ttl h2 { font-size: 16px; line-height: 1.3; }
+  #sheet .ttl .sub { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 11.5px; line-height: 1.35; }
+  .tbl { font-size: 11.5px; }
+  .tbl th, .tbl td { padding: 6px 6px; }
 }
 </style>
 </head>
@@ -277,7 +294,8 @@ const GROUP_COLORS = ["#6ea8ff", "#ff9f6e", "#7bd88f", "#ff7a8a", "#c79bff", "#5
 // k-means 12類型の解釈（docs/report.md 第7節）
 const TYPES = { 9: "大都市の都心", 1: "大都市圏の鉄道沿線の郊外", 5: "大都市の周辺区・工業都市", 11: "大都市圏の外側の郊外", 6: "地方の中核都市",
   0: "製造業のある地方都市", 7: "平地の農村・兼業地域", 2: "高齢化の進む地方の小都市", 3: "病院の少ない農山村", 8: "過疎化の進む山間の町村",
-  10: "北海道などの広域の農業町村", 4: "離島" };
+  10: "北海道などの広域の農業町村", 4: "離島・山あいの観光地などの小さな町村" };
+const LABEL_MINZOOM = 7;  // これより拡大したときだけ市区町村名を表示
 const EXAMPLES = ["柏市", "渋谷区", "軽井沢町", "札幌市中央区", "那覇市", "与那国町"];
 
 let A, IND, W, GROUPS, SENS, map, byCode = {}, CENT = {}, BOUNDS = {}, D_REF = 3, selected = null, cmp = null, markers = [];
@@ -317,7 +335,8 @@ Promise.all([
   fetch("data/muni.topojson").then(r => r.json()),
   fetch("data/attributes.json").then(r => r.json()),
   fetch("data/sensitivity.json").then(r => r.ok ? r.json() : null).catch(() => null),
-]).then(([topo, attrs, sens]) => {
+  fetch("data/labels.json").then(r => r.ok ? r.json() : {}).catch(() => ({})),
+]).then(([topo, attrs, sens, lp]) => {
   A = attrs; IND = A.meta.indicators; SENS = sens;
   GROUPS = [...new Set(IND.map(d => d.group))];
   const gn = {}; IND.forEach(d => gn[d.group] = (gn[d.group] || 0) + 1);
@@ -332,7 +351,7 @@ Promise.all([
     const a = byCode[f.properties.code];
     if (!a) return;
     const gi = geomInfo(f.geometry);
-    BOUNDS[a.code] = gi.b; CENT[a.code] = gi.c;
+    BOUNDS[a.code] = gi.b; CENT[a.code] = lp[a.code] || gi.c;
     f.properties.color = color(a);
   });
   initMap(gj); buildDialogs(); renderEmpty();
@@ -341,8 +360,9 @@ Promise.all([
 function initMap(gj) {
   map = new maplibregl.Map({
     container: "map",
-    style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#0b0e13" } }] },
-    bounds: [[128.6, 30.6], [146.2, 45.6]], fitBoundsOptions: { padding: initPad() }, minZoom: 3.5, maxZoom: 12, attributionControl: false, dragRotate: false, pitchWithRotate: false,
+    style: { version: 8, glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf", sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#0b0e13" } }] },
+    bounds: [[128.6, 30.6], [146.2, 45.6]], fitBoundsOptions: { padding: initPad() }, minZoom: 3.5, maxZoom: 12, attributionControl: false,
+    localIdeographFontFamily: "'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Noto Sans CJK JP', 'Yu Gothic', Meiryo, sans-serif", dragRotate: false, pitchWithRotate: false,
   });
   map.touchZoomRotate.disableRotation();
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
@@ -358,6 +378,15 @@ function initMap(gj) {
       "line-width": ["case", ["boolean", ["feature-state", "sel"], false], 2.6, ["boolean", ["feature-state", "cmp"], false], 2.2, ["boolean", ["feature-state", "nbr"], false], 1.1, 0],
       "line-opacity": ["case", ["boolean", ["feature-state", "nbr"], false], .8, 1] } });
     map.addLayer({ id: "hover", type: "line", source: "muni", paint: { "line-color": "#ffffff", "line-width": ["case", ["boolean", ["feature-state", "hov"], false], 1.4, 0] } });
+    map.addSource("labels", { type: "geojson", data: { type: "FeatureCollection", features: A.areas.filter(a => CENT[a.code]).map(a => ({ type: "Feature", properties: { name: a.name, code: a.code }, geometry: { type: "Point", coordinates: CENT[a.code] } })) } });
+    map.addLayer({ id: "labels", type: "symbol", source: "labels", minzoom: LABEL_MINZOOM,
+      layout: { "text-field": ["get", "name"], "text-font": ["Open Sans Semibold"], "text-size": ["interpolate", ["linear"], ["zoom"], LABEL_MINZOOM, 10, 10, 12.5, 12, 15], "text-max-width": 8, "text-padding": 3 },
+      paint: { "text-color": "#eef1f6", "text-halo-color": "rgba(11, 14, 19, .85)", "text-halo-width": 1.3, "text-opacity": ["interpolate", ["linear"], ["zoom"], LABEL_MINZOOM, 0, LABEL_MINZOOM + .4, 1] } });
+    // 選択中と Top10 は番号マーカーと重ならないよう、名前をマーカーの上下にずらして優先表示
+    map.addLayer({ id: "labels-sel", type: "symbol", source: "labels", minzoom: LABEL_MINZOOM, filter: ["==", ["get", "code"], ""],
+      layout: { "text-field": ["get", "name"], "text-font": ["Open Sans Semibold"], "text-size": ["interpolate", ["linear"], ["zoom"], LABEL_MINZOOM, 11, 10, 13.5, 12, 16], "text-max-width": 8,
+        "text-variable-anchor": ["top", "bottom", "left", "right"], "text-radial-offset": 1.15, "symbol-sort-key": 0 },
+      paint: { "text-color": "#ffffff", "text-halo-color": "rgba(11, 14, 19, .95)", "text-halo-width": 1.6 } });
     const tip = $("#tip");
     let hov = null;
     map.on("mousemove", "fill", e => {
@@ -390,6 +419,7 @@ function select(code, { fly = true, push = true } = {}) {
   cmp = a.neighbors ? a.neighbors[0].code : null; setCmpState(cmp, true);
   const keep = [code, ...(a.neighbors || []).map(n => n.code)];
   map.setPaintProperty("fill", "fill-opacity", ["case", ["in", ["get", "code"], ["literal", keep]], 1, .28]);
+  setLabelFocus(keep);
   map.getSource("links").setData({ type: "FeatureCollection", features: (a.neighbors || []).filter(n => CENT[n.code]).map(n => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [CENT[code], CENT[n.code]] } })) });
   drawMarkers(a);
   if ($("#sheet").dataset.state === "peek") setSheet("half");
@@ -398,11 +428,18 @@ function select(code, { fly = true, push = true } = {}) {
   document.title = `${label(a)} に似ている市区町村 | 市区町村 統計類似色マップ`;
   renderSelected();
 }
+function setLabelFocus(keep) {
+  const inKeep = ["in", ["get", "code"], ["literal", keep]];
+  map.setFilter("labels-sel", inKeep);
+  map.setFilter("labels", ["!", inKeep]);
+  map.setPaintProperty("labels", "text-opacity", keep.length ? .55 : ["interpolate", ["linear"], ["zoom"], LABEL_MINZOOM, 0, LABEL_MINZOOM + .4, 1]);
+}
 function clearSel() {
   if (!selected) return;
   setStates(selected, false); setCmpState(cmp, false);
   selected = cmp = null;
   map.setPaintProperty("fill", "fill-opacity", 1);
+  setLabelFocus([]);
   map.getSource("links").setData({ type: "FeatureCollection", features: [] });
   markers.forEach(m => m.remove()); markers = [];
   history.replaceState(null, "", location.pathname + location.search);
@@ -493,9 +530,124 @@ function traits(a) {
 }
 const shortLabel = s => s.replace(/[（(].*?[）)]/g, "");
 
+/* ---- ルールベースの説明文: 指標ごとの「高い/低い」の言い方を文型に当てはめる ---- */
+const PHRASE = {
+  pop_density: ["可住地の人口密度が高い", "可住地の人口密度が低い"],
+  child_ratio: ["子どもの割合が高い", "子どもの割合が低い"],
+  elderly_ratio: ["高齢化が進んでいる", "高齢者の割合が低い"],
+  pop_change: ["人口の伸びが大きい", "人口の減少が大きい"],
+  proj_change_2050: ["将来の人口減少が小さいと推計されている", "将来の人口減少が大きいと推計されている"],
+  foreign_ratio: ["外国人住民の割合が高い", "外国人住民の割合が低い"],
+  natural_change: ["出生が死亡に比べて多い", "死亡が出生を大きく上回っている"],
+  net_migration: ["転入が転出を上回っている", "転出が転入を上回っている"],
+  mobility: ["転入・転出による人の入れ替わりが多い", "転入・転出による人の入れ替わりが少ない"],
+  unmarried: ["未婚の人の割合が高い", "未婚の人の割合が低い"],
+  single_hh: ["一人暮らしの世帯が多い", "一人暮らしの世帯が少ない"],
+  elderly_single_hh: ["一人暮らしの高齢者が多い", "一人暮らしの高齢者が少ない"],
+  hh_size: ["1世帯あたりの人数が多い", "1世帯あたりの人数が少ない"],
+  day_night: ["昼間に通勤・通学で人が集まる", "昼間は通勤・通学で人が出ていく"],
+  did_ratio: ["人口集中地区に住む人が多い", "人口集中地区に住む人が少ない"],
+  out_commute: ["他の市区町村へ通勤する人が多い", "地元で働く人が多い"],
+  rail_commute: ["鉄道で通勤・通学する人が多い", "鉄道で通勤・通学する人が少ない"],
+  car_commute: ["車で通勤・通学する人が多い", "車で通勤・通学する人が少ない"],
+  bike_commute: ["自転車で通勤・通学する人が多い", "自転車で通勤・通学する人が少ない"],
+  forest_ratio: ["森林が多い", "森林が少ない"],
+  primary_ind: ["農林漁業で働く人の割合が高い", "農林漁業で働く人の割合が低い"],
+  secondary_ind: ["製造業・建設業で働く人の割合が高い", "製造業・建設業で働く人の割合が低い"],
+  unemployment: ["失業率が高い", "失業率が低い"],
+  female_lfpr: ["働く女性の割合が高い", "働く女性の割合が低い"],
+  elderly_workers: ["働く人に占める65歳以上の割合が高い", "働く人に占める65歳以上の割合が低い"],
+  regular_emp: ["正規雇用の割合が高い", "正規雇用の割合が低い"],
+  jobs_per_capita: ["人口に比べて従業者が多い", "人口に比べて従業者が少ない"],
+  emp_manufacturing: ["従業者に占める製造業の割合が高い", "従業者に占める製造業の割合が低い"],
+  emp_info_finance_prof: ["従業者に占める情報通信・金融・専門サービスの割合が高い", "従業者に占める情報通信・金融・専門サービスの割合が低い"],
+  emp_hospitality: ["従業者に占める宿泊・飲食の割合が高い", "従業者に占める宿泊・飲食の割合が低い"],
+  emp_health_welfare: ["従業者に占める医療・福祉の割合が高い", "従業者に占める医療・福祉の割合が低い"],
+  income: ["所得水準が高い", "所得水準が低い"],
+  univ_grad: ["大学・大学院卒の割合が高い", "大学・大学院卒の割合が低い"],
+  low_edu: ["最終学歴が中学校までの人の割合が高い", "最終学歴が中学校までの人の割合が低い"],
+  owner_ratio: ["持ち家が多い", "持ち家が少ない"],
+  private_rent_ratio: ["民間の賃貸住宅が多い", "民間の賃貸住宅が少ない"],
+  detached_ratio: ["一戸建てが多い", "一戸建てが少ない"],
+  highrise_ratio: ["高層マンションに住む世帯が多い", "高層マンションに住む世帯が少ない"],
+  retail_pc: ["人口あたりの小売店が多い", "人口あたりの小売店が少ない"],
+  restaurant_pc: ["人口あたりの飲食店が多い", "人口あたりの飲食店が少ない"],
+  doctors_pc: ["人口あたりの医師が多い", "人口あたりの医師が少ない"],
+  clinics_pc: ["人口あたりの診療所が多い", "人口あたりの診療所が少ない"],
+  beds_pc: ["人口あたりの病床が多い", "人口あたりの病床が少ない"],
+  pw_density: ["住まいの周りの人口密度が高い", "住まいの周りの人口密度が低い"],
+  station_dist: ["最寄り駅が遠い", "最寄り駅が近い"],
+  hospital_dist: ["最寄りの病院が遠い", "最寄りの病院が近い"],
+  agri_ratio: ["農地が多い", "農地が少ない"],
+  paddy_share: ["農地のうち水田が多い", "農地のうち畑が多い"],
+  building_ratio: ["市街地（建物用地）が広い", "市街地（建物用地）が狭い"],
+};
+// 符号のある率は全国中央値が負なので、z が高くても実数は負のことがある: [実数が正, 実数が負, 比較の言い方]
+const SIGNED = {
+  pop_change: ["人口が増えている", "人口の減少が全国の中央値より小さい", "人口増減率が高い"],
+  proj_change_2050: ["将来も人口が増えると推計されている", "将来の人口減少が全国の中央値より小さいと推計されている", "将来推計の人口変化率が高い"],
+  natural_change: ["出生が死亡を上回っている", "死亡超過が全国の中央値より小さい", "自然増減率が高い"],
+  net_migration: ["転入が転出を上回っている", "転出超過が全国の中央値より小さい", "社会増減率（転入−転出）が高い"],
+};
+function phr(i, up, ...areas) {
+  const k = IND[i].key, sg = SIGNED[k];
+  if (up && sg) return areas.length ? (areas.every(o => o.raw[i] > 0) ? sg[0] : sg[1]) : sg[2];
+  return (PHRASE[k] || [shortLabel(IND[i].label) + "が高い", shortLabel(IND[i].label) + "が低い"])[up ? 0 : 1];
+}
+const quote = xs => xs.map(t => `「${t}」`).join("");
+const typeOf = a => TYPES[a.cluster] || "C" + a.cluster;
+const isImp = (o, i) => !!(o.imputed && o.imputed.includes(IND[i].key));
+const IMP_NOTE = `（挙げた指標の一部は、統計が欠けているため、ほかの指標が似た市区町村の値から推定しています）`;
+const proseNote = () => `${IND.length}指標の数値を決まった文型で言い換えた要約です。似ている理由（因果関係）を示すものではありません。`;
+
+// 全国中央値からの偏差が大きい指標を、同じ分野から2つまでに絞って選ぶ
+function salient(a, n = 3, min = 1) {
+  const per = {};
+  return IND.map((d, i) => ({ i, s: Math.abs(a.z[i]) })).filter(x => x.s >= min).sort((x, y) => y.s - x.s)
+    .filter(x => (per[IND[x.i].group] = (per[IND[x.i].group] || 0) + 1) <= 2).slice(0, n);
+}
+
+function describeArea(a) {
+  const top = salient(a);
+  const s = stabInfo(a.code);
+  let t = `${esc(a.name)}は「${esc(typeOf(a))}」に分類される地域です。`;
+  t += top.length ? `全国の市区町村と比べると、${esc(quote(top.map(x => phr(x.i, a.z[x.i] > 0, a))))}点が目立ちます。`
+    : `多くの指標が全国の中央値に近い地域です。`;
+  if (top.some(x => isImp(a, x.i))) t += IMP_NOTE;
+  if (s) t += s.lv[0] === "高" ? `似ている市区町村 Top${A.meta.k} は、条件を変えて計算し直してもほとんど入れ替わりません。`
+    : s.lv[0] === "中" ? `似ている市区町村 Top${A.meta.k} は、条件を変えて計算し直すと一部が入れ替わります。`
+    : `似ている市区町村 Top${A.meta.k} は、条件を変えて計算し直すとかなり入れ替わるため、目安としてご覧ください。`;
+  return t;
+}
+
+function describePair(a, b, c, d2, byG, common, diff) {
+  const A_ = esc(a.name), B_ = esc(b.name);
+  const rank = a.neighbors.findIndex(n => n.code === b.code) + 1;
+  const cm = common.slice(0, 3);
+  const cites = [];
+  let t = a.cluster === b.cluster ? `${A_}と${B_}は、どちらも「${esc(typeOf(a))}」に分類されます。`
+    : `${A_}は「${esc(typeOf(a))}」、${B_}は「${esc(typeOf(b))}」と類型は異なりますが、${A_}に似ている市区町村の${rank}位です。`;
+  if (cm.length) { t += `特に、どちらも${esc(quote(cm.map(x => phr(x.i, a.z[x.i] > 0, a, b))))}点が共通しています。`; cites.push(...cm.map(x => x.i)); }
+  else t += `どちらも多くの指標が全国の中央値に近いことが、似ている主な理由です。`;
+  const kMax = byG.indexOf(Math.max(...byG)), kMin = byG.indexOf(Math.min(...byG));
+  t += `${IND.length}指標の差のうち、いちばん大きいのは「${esc(GROUPS[kMax])}」の分野（${pct(byG[kMax])}）で、いちばん小さいのは「${esc(GROUPS[kMin])}」の分野（${pct(byG[kMin])}）です。`;
+  const parts = [];
+  for (const o of [a, b]) {
+    const xs = diff.slice(0, 3).filter(x => x.s / d2 >= .05 && (a.z[x.i] > b.z[x.i]) === (o === a));
+    if (xs.length) { parts.push(`${esc(o.name)}のほうが${esc(quote(xs.map(x => phr(x.i, true))))}`); cites.push(...xs.map(x => x.i)); }
+  }
+  if (parts.length) t += `個別の指標では、${parts.join("、")}という違いがあります。`;
+  if (cites.some(i => isImp(a, i) || isImp(b, i))) t += IMP_NOTE;
+  return t;
+}
+
+function prose(text, col) {
+  return `<div class="prose" style="border-left-color:${col}"><p>${text}</p><p class="pn">${proseNote()}</p></div>`;
+}
+
 function renderLeft(a) {
   const t = traits(a);
-  let h = `<div class="sec-h"><h3>似ている市区町村 Top${A.meta.k}</h3><small>クリックで比較 · ⤴で移動</small></div><div class="cards">`;
+  let h = `<p class="lead">${describeArea(a)}</p><div class="sec-h"><h3>似ている市区町村 Top${A.meta.k}</h3><small>クリックで比較 · ⤴で移動</small></div><div class="cards">`;
   a.neighbors.forEach((n, i) => {
     const b = byCode[n.code];
     const dist = CENT[a.code] && CENT[n.code] ? km(CENT[a.code], CENT[n.code]) : null;
@@ -544,6 +696,7 @@ function renderRight(a) {
   let h = `<div class="vs"><span class="who"><span class="sw" style="background:${color(a)}"></span>${esc(a.name)}</span><span class="x">×</span>
     <span class="who"><span class="sw" style="background:${color(b)}"></span>${esc(b.name)}</span>
     <span class="chip num" style="margin-left:auto">${a.neighbors.findIndex(n => n.code === b.code) + 1}位 · 距離 ${a.neighbors.find(n => n.code === b.code).d.toFixed(2)}</span></div>
+  ${prose(describePair(a, b, c, d2, byG, common, diff), color(b))}
   <div class="cmpgrid">
     <div class="box"><h4>共通の特徴<span class="badge c">どちらも全国中央値から同じ向きに離れている</span></h4>
       ${common.length ? common.map(x => `<div class="li"><span>${esc(shortLabel(IND[x.i].label))}<span class="${a.z[x.i] > 0 ? "up" : "dn"}">　どちらも${a.z[x.i] > 0 ? "高い" : "低い"}</span></span><span class="r num">${fmt(a.raw[x.i])} / ${fmt(b.raw[x.i])}</span></div>`).join("") : `<p class="note">該当なし（どちらも全国平均的）</p>`}
@@ -651,10 +804,10 @@ function buildDialogs() {
   <div class="callout"><p>回転・反転なので、色の差（＝類似関係の表現）は変わりません。「都市度の目安」は色の向きを決めるための便宜的なもので、公式な都市・農村区分ではありません。北海道の農業町村のように、どちらの方向にも当てはまらない類型は緑や紫系になります。</p></div>
   <h3>色の検証</h3>
   <p>元の ${IND.length} 次元での関係が、3次元の配置と色でどれだけ保たれているか（1 に近いほど良い）。</p>
-  <table class="tbl"><tr><th>検証指標</th><th class="n">UMAP（採用）</th><th class="n">PCA（参考）</th></tr>
+  <div class="tw"><table class="tbl"><tr><th>検証指標</th><th class="n">UMAP（採用）</th><th class="n">PCA（参考）</th></tr>
   ${mrow("trustworthiness_k10", "Trustworthiness（k=10）")}
   ${mrow("knn_overlap_k10_oklab_color", "近傍10件の一致率（OKLab 色）")}
-  ${mrow("dist_spearman_oklab_color", "距離の順位相関（OKLab 色）")}</table>
+  ${mrow("dist_spearman_oklab_color", "距離の順位相関（OKLab 色）")}</table></div>
   <p class="note">UMAP は「似たもの同士が近い」関係をよく保ち、PCA（第3主成分までの累積寄与率 ${(e.slice(0, 3).reduce((s, v) => s + v, 0) * 100).toFixed(1)}%）は全体の距離関係をよく保ちます。地図の色は大まかな類型を見るためのもので、個別の類似先は色ではなく元の ${IND.length} 次元で計算した Top${A.meta.k} を参照してください。</p>
   <h3>指標一覧（${IND.length}指標・${GROUPS.length}分野）</h3>
   <div class="indgrid">${byG.map(([g, ds], k) => `<div class="box"><h4 style="margin:0 0 6px;font-size:12px;display:flex;gap:6px;align-items:center"><span class="dot" style="background:${GROUP_COLORS[k % 7]}"></span>${esc(g)}（${ds.length}）</h4><ul>${ds.map(d => `<li>${esc(d.label)}</li>`).join("")}</ul></div>`).join("")}</div>
@@ -664,27 +817,27 @@ function buildDialogs() {
   $("#secSens").innerHTML = !S ? `<p>sensitivity.json がありません（scripts/07_sensitivity.py を実行）</p>` : `
   <h3>条件を変えても Top${S.k} は変わらないか</h3>
   <p>基準の設定（分野均等の重み・KNN補完・福島7町村除外・全指標）から条件を1つ変えて計算し直し、各地域の Top${S.k} が平均何件残るかを調べました。</p>
-  <table class="tbl"><tr><th>変えた条件</th><th style="width:40%">平均一致率</th><th class="n">半数以上が一致</th></tr>
-  ${S.neighbor_variants.map(r => `<tr><td>${esc(r.variant)}</td><td><div class="hbar"><span class="tr"><i style="width:${r.mean_overlap * 100}%"></i></span><span class="num">${pct(r.mean_overlap)}</span></div></td><td class="n num">${pct(r.share_ge_half)}</td></tr>`).join("")}</table>
+  <div class="tw"><table class="tbl"><tr><th>変えた条件</th><th style="width:40%">平均一致率</th><th class="n">半数以上が一致</th></tr>
+  ${S.neighbor_variants.map(r => `<tr><td>${esc(r.variant)}</td><td><div class="hbar"><span class="tr"><i style="width:${r.mean_overlap * 100}%"></i></span><span class="num">${pct(r.mean_overlap)}</span></div></td><td class="n num">${pct(r.share_ge_half)}</td></tr>`).join("")}</table></div>
   <div class="callout"><p><b>読み方：</b>補完方法や除外ルールの影響は小さい一方、重み付けや分野の選び方を変えると Top${S.k} のうち数件が入れ替わります。Top${S.k} は「この指標セットでの近さ」であり、唯一の正解ではありません。</p></div>
   <h3>地域ごとの安定度</h3>
   <p>指標の 80% をランダムに選んで ${S.n_boot} 回計算し直し、Top${S.k} が平均何件残るかを地域ごとに求めたものです。地域を選ぶと、詳細パネルの見出しに <b style="color:var(--ok)">高（80%以上）</b>・<b style="color:var(--warn)">中（60〜80%）</b>・<b style="color:var(--bad)">低（60%未満）</b> で表示します。低い地域は、指標の選び方で類似先が入れ替わりやすいことを意味します。</p>
   <h3>色（3次元配置）の安定性</h3>
   <p>UMAP のパラメータと乱数シードを変えたときの配置の変化です（既定: n_neighbors=20, min_dist=0.3, seed=42）。</p>
-  <table class="tbl"><tr><th class="n">n_neighbors</th><th class="n">min_dist</th><th class="n">seed</th><th class="n">Trust.</th><th class="n">近傍一致（元空間）</th><th class="n">近傍一致（既定）</th><th class="n">距離相関（既定）</th></tr>
-  ${S.umap_variants.map(r => `<tr><td class="n num">${r.n_neighbors}</td><td class="n num">${r.min_dist}</td><td class="n num">${r.seed}</td><td class="n num">${r.trustworthiness}</td><td class="n num">${r.knn_overlap_vs_original}</td><td class="n num">${r.knn_overlap_vs_default_umap}</td><td class="n num">${r.dist_spearman_vs_default_umap}</td></tr>`).join("")}</table>
+  <div class="tw"><table class="tbl"><tr><th class="n">n_neighbors</th><th class="n">min_dist</th><th class="n">seed</th><th class="n">Trust.</th><th class="n">近傍一致（元空間）</th><th class="n">近傍一致（既定）</th><th class="n">距離相関（既定）</th></tr>
+  ${S.umap_variants.map(r => `<tr><td class="n num">${r.n_neighbors}</td><td class="n num">${r.min_dist}</td><td class="n num">${r.seed}</td><td class="n num">${r.trustworthiness}</td><td class="n num">${r.knn_overlap_vs_original}</td><td class="n num">${r.knn_overlap_vs_default_umap}</td><td class="n num">${r.dist_spearman_vs_default_umap}</td></tr>`).join("")}</table></div>
   <p class="note">全体の配置（距離相関）は設定を変えても保たれますが、細かな近傍は入れ替わります。</p>`;
 
   $("#secSrc").innerHTML = `
   <h3>出典</h3>
-  <table class="tbl"><tr><th>データ</th><th>使った内容</th></tr>
+  <div class="tw"><table class="tbl"><tr><th>データ</th><th>使った内容</th></tr>
   <tr><td><a href="https://www.e-stat.go.jp/regional-statistics/ssdsview" target="_blank" rel="noopener">e-Stat 社会・人口統計体系「市区町村データ」</a></td><td>人口・世帯、経済基盤、教育、労働、居住、健康・医療、福祉など</td></tr>
   <tr><td><a href="https://www.e-stat.go.jp/stat-search/files?toukei=00200521&tstat=000001136464" target="_blank" rel="noopener">令和2年国勢調査</a></td><td>住宅の所有の関係・建て方別世帯数、通勤・人口構成など</td></tr>
   <tr><td><a href="https://www.e-stat.go.jp/gis" target="_blank" rel="noopener">令和2年国勢調査 250mメッシュ人口（e-Stat 統計GIS）</a></td><td>人口加重人口密度、駅・病院までの人口加重距離</td></tr>
   <tr><td><a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-2024.html" target="_blank" rel="noopener">国土数値情報 行政区域 N03（2024年）</a></td><td>市区町村の境界</td></tr>
   <tr><td><a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-S12-2023.html" target="_blank" rel="noopener">国土数値情報 駅別乗降客数 S12（2023年）</a></td><td>駅の位置</td></tr>
   <tr><td><a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-P04-2020.html" target="_blank" rel="noopener">国土数値情報 医療機関 P04（2020年）</a></td><td>病院（20床以上）の位置。診療所は含まない</td></tr>
-  <tr><td><a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-L03-a-2021.html" target="_blank" rel="noopener">国土数値情報 土地利用細分メッシュ L03-a（2021年）</a></td><td>農用地率、田の割合、建物用地率</td></tr></table>
+  <tr><td><a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-L03-a-2021.html" target="_blank" rel="noopener">国土数値情報 土地利用細分メッシュ L03-a（2021年）</a></td><td>農用地率、田の割合、建物用地率</td></tr></table></div>
   <p class="note">各データを加工して作成しています。地図の描画には MapLibre GL JS を使っています。ソースコードと再現手順: <a href="${REPO}" target="_blank" rel="noopener">GitHub</a></p>
   <h3>注意・限界</h3>
   <ul>
