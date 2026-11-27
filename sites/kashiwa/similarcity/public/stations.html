@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>駅圏 統計類似色マップ</title>
+<meta name="description" content="全国の駅の周り（駅前500m・徒歩圏1km・周辺2km）の人口・世帯・土地利用などの統計を比べ、似ている駅ほど近い色で表示する地図です。">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<style>
+:root {
+  --bg: #0b0e13; --panel: rgba(16, 19, 26, .86); --panel-solid: #12161e; --line: rgba(255, 255, 255, .09);
+  --line2: rgba(255, 255, 255, .16); --tx: #e9ecf2; --mut: #8d96a8; --dim: #5d6576; --acc: #f1f3f7;
+  --a: #ff7a59; --b: #5aa9ff; --ok: #4fd1a5; --warn: #f3b74f; --bad: #ff6b6b;
+  --r: 14px; --sheet-h: 64px;
+  --sans: "Inter", "Noto Sans JP", "Hiragino Sans", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--tx); font: 13px/1.55 var(--sans); -webkit-font-smoothing: antialiased; overflow: hidden; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+a { color: #9cc7ff; }
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+#map { position: fixed; inset: 0; }
+.glass { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); box-shadow: 0 10px 40px rgba(0, 0, 0, .45); }
+.eyebrow { font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--mut); font-weight: 600; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line2); font-size: 11.5px; color: var(--tx); white-space: nowrap; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1px rgba(255, 255, 255, .25) inset; }
+.btn { padding: 6px 11px; border-radius: 9px; border: 1px solid var(--line2); font-size: 12px; color: var(--tx); transition: background .15s, border-color .15s; }
+.btn:hover { background: rgba(255, 255, 255, .07); border-color: rgba(255, 255, 255, .3); }
+.icon-btn { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--mut); }
+.icon-btn:hover { background: rgba(255, 255, 255, .07); color: var(--tx); }
+
+/* ---- 左上インフォパネル ---- */
+#about { position: fixed; top: 14px; left: 14px; width: 340px; padding: 16px 18px 14px; z-index: 8; }
+#about h1 { font-size: 17px; margin: 4px 0 6px; font-weight: 700; letter-spacing: .01em; }
+#about p { margin: 0 0 10px; color: var(--mut); font-size: 12.5px; }
+#about .row { display: flex; gap: 6px; flex-wrap: wrap; }
+#about .toggle { position: absolute; top: 10px; right: 10px; }
+#about:not(.min) { max-height: calc(100vh - 110px); overflow-y: auto; }
+#about.min { width: auto; padding: 10px 46px 10px 14px; }
+#about.min .body { display: none; }
+#about.min h1 { font-size: 14px; margin: 0; }
+#about.min .eyebrow { display: none; }
+.legend { margin: 4px 0 12px; }
+.legend .ramp { height: 8px; border-radius: 5px; background: linear-gradient(90deg, #c0533a, #c27a6e, #9b8fa6, #5e93c0, #2f8fb8); }
+.legend .ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--mut); margin-top: 4px; }
+.legend .hint { font-size: 11.5px; color: var(--tx); margin-bottom: 6px; }
+.modeseg { display: flex; gap: 2px; padding: 2px; margin: 0 0 10px; border: 1px solid var(--line2); border-radius: 10px; }
+.modeseg button { flex: 1; padding: 5px 6px; border-radius: 8px; font-size: 12px; color: var(--mut); }
+.modeseg button[aria-pressed="true"] { background: rgba(255, 255, 255, .1); color: var(--tx); }
+.tylist { max-height: 34vh; overflow: auto; margin: 0 -6px; padding: 0 6px; }
+.tylist .gh { font-size: 10.5px; color: var(--mut); margin: 8px 0 2px; display: flex; gap: 6px; align-items: center; }
+.ty { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 4px 6px; border-radius: 7px; font-size: 12px; line-height: 1.35; color: var(--tx); }
+.ty:hover { background: rgba(255, 255, 255, .06); }
+.ty[aria-pressed="true"] { background: rgba(255, 255, 255, .12); }
+.ty .n { margin-left: auto; color: var(--dim); font-size: 11px; }
+.tyfocus { margin: 8px 0 0; padding: 8px 10px; border-left: 3px solid var(--line2); border-radius: 8px; background: rgba(255, 255, 255, .03); font-size: 12px; line-height: 1.65; }
+.tyfocus small { display: block; color: var(--mut); font-size: 11px; margin-top: 4px; }
+
+/* ---- 右上検索 ---- */
+#searchbox { position: fixed; top: 14px; right: 14px; width: 320px; z-index: 9; }
+#searchbox .field { display: flex; align-items: center; gap: 8px; padding: 0 10px 0 12px; height: 44px; }
+#searchbox input { flex: 1; background: none; border: 0; outline: 0; color: var(--tx); font: 14px var(--sans); min-width: 0; }
+#searchbox input::placeholder { color: var(--dim); }
+kbd { font: 11px var(--sans); color: var(--mut); border: 1px solid var(--line2); border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; }
+#sugg { margin-top: 6px; padding: 6px; display: none; max-height: 50vh; overflow: auto; }
+#sugg.open { display: block; }
+#sugg button { display: flex; width: 100%; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; text-align: left; }
+#sugg button[aria-selected="true"], #sugg button:hover { background: rgba(255, 255, 255, .08); }
+#sugg .pref { color: var(--mut); font-size: 11.5px; margin-left: auto; }
+#sugg .empty { padding: 8px 10px; color: var(--mut); }
+.maplibregl-ctrl-top-right { top: 66px; }
+.maplibregl-ctrl-group { background: var(--panel-solid) !important; border: 1px solid var(--line); }
+.maplibregl-ctrl-group button { filter: invert(.9); }
+.maplibregl-ctrl-group button + button { border-top-color: rgba(0, 0, 0, .2) !important; }
+.maplibregl-ctrl-attrib { background: rgba(11, 14, 19, .7) !important; color: var(--mut); font: 10px/1.4 var(--sans); }
+.maplibregl-ctrl-attrib a { color: var(--mut); }
+.maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left { bottom: calc(var(--sheet-h) + 18px); transition: bottom .3s; }
+
+#tip { position: fixed; z-index: 4; pointer-events: none; padding: 6px 10px; display: none; flex-direction: column; gap: 2px; max-width: 320px; font-size: 12px; border-radius: 9px; }
+.mk { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 600 11px var(--sans); color: #0b0e13; background: #f1f3f7; box-shadow: 0 0 0 2px rgba(11, 14, 19, .85), 0 4px 12px rgba(0, 0, 0, .5); cursor: pointer; transition: transform .15s; }
+.mk:hover, .mk.on { transform: scale(1.25); background: #fff; }
+.mk.self { width: 14px; height: 14px; background: #fff; box-shadow: 0 0 0 3px rgba(11, 14, 19, .9), 0 0 0 6px rgba(255, 255, 255, .35); }
+
+/* ---- 下部シート ---- */
+#sheet { position: fixed; left: 14px; right: 14px; bottom: 14px; z-index: 7; height: var(--sheet-h); display: flex; flex-direction: column; transition: height .3s cubic-bezier(.2, .8, .2, 1); overflow: hidden; }
+#sheet .grab { flex: none; display: flex; align-items: center; gap: 14px; padding: 0 12px 0 18px; height: 62px; cursor: pointer; user-select: none; }
+#sheet .handle { position: absolute; top: 6px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 3px; background: var(--line2); }
+#sheet .ttl { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; }
+#sheet .ttl .big { width: 30px; height: 30px; border-radius: 9px; flex: none; box-shadow: 0 0 0 1px rgba(255, 255, 255, .2) inset; }
+#sheet .ttl h2 { margin: 0; font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#sheet .ttl .sub { color: var(--mut); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#sheet .chev { transition: transform .3s; }
+#sheet[data-state="full"] .chev, #sheet[data-state="half"] .chev { transform: rotate(180deg); }
+#sheet .content { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(300px, 380px) 1fr; border-top: 1px solid var(--line); }
+#sheet .col { min-height: 0; overflow: auto; padding: 14px 18px 18px; }
+#sheet .col + .col { border-left: 1px solid var(--line); }
+.examples { display: flex; gap: 6px; flex-wrap: wrap; }
+.examples button { padding: 4px 10px; border: 1px solid var(--line2); border-radius: 999px; font-size: 12px; }
+.examples button:hover { background: rgba(255, 255, 255, .07); }
+
+.sec-h { display: flex; align-items: baseline; justify-content: space-between; margin: 0 0 10px; }
+.sec-h h3 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--mut); }
+.sec-h small { color: var(--dim); font-size: 11px; }
+.traits { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.traits .chip b { font-weight: 600; }
+.up { color: #ffb199; } .dn { color: #8cc4ff; }
+
+.cards { display: flex; flex-direction: column; gap: 6px; }
+.card { display: grid; grid-template-columns: 26px 1fr auto; gap: 4px 10px; align-items: center; padding: 9px 10px 9px 8px; border-radius: 11px; border: 1px solid transparent; cursor: pointer; text-align: left; width: 100%; transition: background .15s, border-color .15s; }
+.card:hover { background: rgba(255, 255, 255, .045); }
+.card.on { background: rgba(255, 255, 255, .07); border-color: var(--line2); }
+.card .rk { font: 600 15px var(--sans); color: var(--dim); text-align: center; }
+.card.on .rk { color: var(--tx); }
+.card .nm { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; font-size: 13.5px; }
+.card .nm span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .meta { grid-column: 2; display: flex; flex-wrap: wrap; gap: 0 10px; min-width: 0; color: var(--mut); font-size: 11px; }
+.card .meta span { white-space: nowrap; }
+.card .meter { grid-column: 2 / 4; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .07); overflow: hidden; }
+.card .meter i { display: block; height: 100%; border-radius: 2px; }
+.card .go { grid-row: 1 / 3; grid-column: 3; opacity: 0; }
+.card:hover .go, .card.on .go { opacity: 1; }
+.stab { display: inline-flex; align-items: center; gap: 6px; }
+.note { color: var(--mut); font-size: 11.5px; line-height: 1.6; }
+.lead { margin: 0 0 14px; font-size: 13px; line-height: 1.75; color: var(--tx); }
+.prose { margin: 0 0 14px; padding: 12px 14px; border: 1px solid var(--line); border-left: 3px solid var(--line2); border-radius: 10px; background: rgba(255,255,255,.025); }
+.prose p { margin: 0; font-size: 13px; line-height: 1.8; }
+.prose .pn { margin-top: 6px; font-size: 11px; line-height: 1.5; color: var(--mut); }
+
+.vs { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.vs .who { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+.vs .x { color: var(--dim); }
+.vs .sw { width: 14px; height: 14px; border-radius: 4px; }
+.cmpgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px; margin-bottom: 18px; }
+.box h4 { margin: 0 0 8px; font-size: 11.5px; font-weight: 600; color: var(--mut); letter-spacing: .05em; }
+.dom { display: grid; grid-template-columns: 92px 1fr 38px; gap: 8px; align-items: center; font-size: 12px; margin-bottom: 5px; }
+.dom .tr { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .06); overflow: hidden; }
+.dom .tr i { display: block; height: 100%; border-radius: 3px; }
+.dom .v { text-align: right; color: var(--mut); font-size: 11.5px; }
+.li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+.li:last-child { border-bottom: 0; }
+.li .r { color: var(--mut); white-space: nowrap; font-size: 12px; }
+.badge { font-size: 10.5px; padding: 1px 6px; border-radius: 5px; margin-left: 6px; }
+.badge.c { background: rgba(79, 209, 165, .14); color: var(--ok); }
+.badge.d { background: rgba(243, 183, 79, .14); color: var(--warn); }
+
+.prof { width: 100%; border-collapse: collapse; }
+.prof td { padding: 3px 0; font-size: 12px; vertical-align: middle; }
+.prof .g td { padding: 12px 0 4px; font-size: 11px; color: var(--mut); letter-spacing: .08em; font-weight: 600; }
+.prof .lb { width: 36%; padding-right: 10px; }
+.prof .vals { width: 24%; text-align: right; color: var(--mut); white-space: nowrap; padding-left: 10px; }
+.db { position: relative; height: 16px; }
+.db .ax { position: absolute; left: 0; right: 0; top: 7.5px; height: 1px; background: rgba(255, 255, 255, .07); }
+.db .c0 { position: absolute; left: 50%; top: 2px; height: 12px; width: 1px; background: rgba(255, 255, 255, .25); }
+.db .seg { position: absolute; top: 6.5px; height: 3px; background: rgba(255, 255, 255, .22); border-radius: 2px; }
+.db .p { position: absolute; top: 3px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; border: 2px solid var(--bg); }
+.legendrow { display: flex; gap: 14px; align-items: center; font-size: 11.5px; color: var(--mut); margin: 4px 0 4px; flex-wrap: wrap; }
+.legendrow span { display: inline-flex; gap: 6px; align-items: center; }
+
+/* ---- ダイアログ ---- */
+dialog { border: 1px solid var(--line2); border-radius: 18px; padding: 0; background: var(--panel-solid); color: var(--tx); width: min(860px, calc(100vw - 28px)); max-height: min(86vh, 900px); box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
+dialog::backdrop { background: rgba(5, 7, 10, .6); backdrop-filter: blur(3px); }
+dialog[open] { display: flex; flex-direction: column; }
+.dlg-h { display: flex; align-items: center; gap: 4px; padding: 12px 12px 0 20px; border-bottom: 1px solid var(--line); }
+.tabs { display: flex; gap: 2px; flex: 1; overflow-x: auto; }
+.tabs button { padding: 10px 14px 12px; color: var(--mut); border-bottom: 2px solid transparent; font-weight: 600; white-space: nowrap; }
+.tabs button[aria-selected="true"] { color: var(--tx); border-bottom-color: var(--tx); }
+.dlg-b { overflow: auto; padding: 18px 24px 26px; }
+.dlg-b section { display: none; }
+.dlg-b section.on { display: block; }
+.dlg-b h3 { font-size: 15px; margin: 18px 0 8px; }
+.dlg-b h3:first-child { margin-top: 0; }
+.dlg-b p, .dlg-b li { color: #c9cfdb; font-size: 13px; }
+.dlg-b ol, .dlg-b ul { padding-left: 20px; }
+.steps { counter-reset: s; list-style: none; padding: 0 !important; display: grid; gap: 8px; }
+.steps li { counter-increment: s; position: relative; padding: 10px 12px 10px 44px; border: 1px solid var(--line); border-radius: 11px; }
+.steps li::before { content: counter(s); position: absolute; left: 12px; top: 10px; width: 22px; height: 22px; border-radius: 50%; background: rgba(255, 255, 255, .08); display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--tx); }
+.steps b { color: var(--tx); }
+.tw { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 6px 0 10px; }
+.tw .tbl { margin: 0; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 6px 0 10px; }
+.tbl th, .tbl td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+.tbl th { color: var(--mut); font-weight: 600; font-size: 11.5px; }
+.tbl td.n { text-align: right; }
+.hbar { display: flex; align-items: center; gap: 8px; }
+.hbar .tr { flex: 1; height: 6px; background: rgba(255, 255, 255, .06); border-radius: 3px; overflow: hidden; min-width: 60px; }
+.hbar .tr i { display: block; height: 100%; background: linear-gradient(90deg, #5aa9ff, #4fd1a5); }
+.indgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.indgrid .box { border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; }
+.indgrid .box ul { margin: 0; padding-left: 16px; }
+.indgrid .box li { font-size: 12px; color: #c9cfdb; }
+.callout { border: 1px solid rgba(243, 183, 79, .3); background: rgba(243, 183, 79, .06); border-radius: 11px; padding: 10px 14px; margin: 10px 0; }
+.callout p { margin: 4px 0; }
+
+/* ---- タッチ端末: 16px 未満の入力欄は iOS がフォーカス時に拡大する ---- */
+@media (pointer: coarse) { #searchbox input { font-size: 16px; } }
+@media (max-width: 760px) { .tylist { max-height: 22vh; } }
+
+/* ---- 狭い画面 ---- */
+@media (max-width: 760px) {
+  #about { left: 10px; right: 10px; top: 10px; width: auto; padding: 12px 14px; }
+  #about:not(.min) { max-height: 70vh; overflow: auto; }
+  #searchbox { top: auto; left: 10px; right: 10px; width: auto; position: fixed; }
+  #sheet { left: 0; right: 0; bottom: 0; border-radius: 18px 18px 0 0; border-bottom: 0; }
+  #sheet .content { display: block; overflow: auto; }
+  #sheet .col { overflow: visible; }
+  #sheet .col + .col { border-left: 0; border-top: 1px solid var(--line); }
+  .cmpgrid { grid-template-columns: 1fr; }
+  .maplibregl-ctrl-top-right { display: none; }
+  .prof .lb { width: 42%; }
+  #sheet .grab { padding-left: 14px; gap: 8px; }
+  #sheet .ttl { gap: 10px; }
+  #sheet .ttl h2 { font-size: 16px; line-height: 1.3; }
+  #sheet .ttl .sub { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 11.5px; line-height: 1.35; }
+  .tbl { font-size: 11.5px; }
+  .tbl th, .tbl td { padding: 6px 6px; }
+}
+
+/* ---- 駅圏版 ---- */
+.swrow { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 12.5px; color: var(--tx); cursor: pointer; user-select: none; }
+.swrow input { position: absolute; opacity: 0; pointer-events: none; }
+.swrow .sw { width: 32px; height: 18px; border-radius: 999px; background: rgba(255, 255, 255, .14); position: relative; flex: none; transition: background .15s; }
+.swrow .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #c9ced8; transition: transform .15s; }
+.swrow input:checked + .sw { background: var(--ok); }
+.swrow input:checked + .sw::after { transform: translateX(14px); background: #fff; }
+.swrow input:focus-visible + .sw { outline: 2px solid #9cc7ff; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div id="map" aria-label="駅圏の色分け地図"></div>
+<div id="tip" class="glass"></div>
+
+<aside id="about" class="glass">
+  <div class="eyebrow">Similarcity · Stations</div>
+  <h1>駅圏 統計類似色マップ</h1>
+  <button class="icon-btn toggle" id="aboutToggle" aria-label="パネルをたたむ" title="たたむ／ひらく">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9l4-4 4 4"/></svg>
+  </button>
+  <div class="body">
+    <p>全国 <b class="num" id="nSt">9,051</b> 駅の周り（駅前 500m・徒歩圏 1km・周辺 2km）を <b class="num" id="nInd">42</b> の指標で比べ、<b style="color:var(--tx)">統計的に似ている駅ほど近い色</b>で表示しています。</p>
+    <div class="legend"><div class="hint">色が近い ＝ 駅の周りの統計の傾向が近い</div><div class="ramp"></div><div class="ends"><span>都市的</span><span>郊外</span><span>農山村</span></div></div>
+    <label class="swrow"><input type="checkbox" id="nearT"><span class="sw"></span><span>2km 以内の駅も Top10 に含める</span></label>
+    <div class="row">
+      <button class="btn" data-open="method">手法</button>
+      <button class="btn" data-open="src">出典・注意</button>
+      <a class="btn" href="index.html" style="text-decoration:none">市区町村版へ</a>
+    </div>
+  </div>
+</aside>
+
+<div id="searchbox">
+  <div class="field glass">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#8d96a8" stroke-width="1.7"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg>
+    <input id="q" type="search" placeholder="駅名で検索" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="sugg" aria-autocomplete="list">
+    <kbd id="kbd">/</kbd>
+  </div>
+  <div id="sugg" class="glass" role="listbox"></div>
+</div>
+
+<section id="sheet" class="glass" data-state="peek" aria-label="選択した駅の詳細">
+  <div class="grab" id="grab" role="button" tabindex="0" aria-label="詳細パネルを開閉">
+    <div class="handle"></div>
+    <div class="ttl" id="ttl"></div>
+    <button class="icon-btn chev" aria-hidden="true" tabindex="-1">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9l4-4 4 4"/></svg>
+    </button>
+  </div>
+  <div class="content">
+    <div class="col" id="left"></div>
+    <div class="col" id="right"></div>
+  </div>
+</section>
+
+<dialog id="dlg">
+  <div class="dlg-h">
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="method">手法</button>
+      <button role="tab" data-tab="src">出典・注意</button>
+    </div>
+    <button class="icon-btn" id="dlgClose" aria-label="閉じる">
+      <svg width="14" height="14" viewBox="0 0 14 14" stroke="currentColor" stroke-width="1.6"><path d="M3 3l8 8M11 3l-8 8"/></svg>
+    </button>
+  </div>
+  <div class="dlg-b">
+    <section data-sec="method" id="secMethod"></section>
+    <section data-sec="src" id="secSrc"></section>
+  </div>
+</dialog>
+<script>
+const REPO = "https://github.com/sanskruthiya/municipal-similarity-map";
+const GROUP_COLORS = ["#6ea8ff", "#ff9f6e", "#7bd88f", "#ff7a8a", "#c79bff", "#5fd4d0", "#f2cf5b"];
+const LABEL_MINZOOM = 10;  // これより拡大したときだけ駅名を表示
+const EXAMPLES = ["柏", "柏の葉キャンパス", "吉祥寺", "新宿", "金沢", "鎌倉", "只見"];
+const RING_ORDER = ["", "r0", "r1", "r2"];
+const RING_NAME = { "": "駅・施設", r0: "駅前 0〜500m", r1: "徒歩圏 500m〜1km", r2: "周辺 1〜2km" };
+const RING_PRE = { r0: "駅前500m以内で", r1: "500m〜1kmの徒歩圏で", r2: "1〜2kmの周辺で" };
+
+let S, IND, W, GROUPS, map, byId = {}, D_REF = 2, selected = null, cmp = null, markers = [], NEAR = false;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const label = s => `${s.name}駅`;
+const where = s => s.muni && s.muni.startsWith(s.pref) ? s.muni : `${s.pref} ${s.muni || ""}`;
+const pct = (v, d = 0) => (v * 100).toFixed(d) + "%";
+const base = k => k.replace(/^r\d_/, "");
+const lines = s => s.lines.split("・").map(x => x.replace(/^\d+号線(?=.)/, ""));  // 「4号線丸ノ内線」→「丸ノ内線」
+const INT_KEYS = ["pax", "n_lines", "stations_2km", "hospitals_2km", "clinics_1km"];
+// 割合は %、件数は整数で表示する
+function fmtI(i, v) {
+  if (v === null || v === undefined) return "–";
+  const k = IND[i].key;
+  if (INT_KEYS.includes(k)) return Math.round(v).toLocaleString();
+  if (IND[i].label.endsWith("割合")) return (v * 100).toFixed(v < .1 ? 1 : 0) + "%";
+  return fmt(v);
+}
+function fmt(v) {
+  if (v === null || v === undefined) return "–";
+  const x = Math.abs(v);
+  return x >= 1000 ? Math.round(v).toLocaleString() : x >= 10 ? v.toFixed(1) : x >= 1 ? v.toFixed(2) : v.toFixed(3);
+}
+function km(p, q) {
+  const r = Math.PI / 180, dl = (q[1] - p[1]) * r, dg = (q[0] - p[0]) * r;
+  const h = Math.sin(dl / 2) ** 2 + Math.cos(p[1] * r) * Math.cos(q[1] * r) * Math.sin(dg / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+// 既定は 2km 以内を除いた Top10。切り替えると、除外しない Top10（far と near を距離順に並べ直したもの）
+const nbOf = s => (NEAR ? [...s.far, ...s.near].sort((x, y) => x[1] - y[1]).slice(0, S.meta.k) : s.far).map(([j, d]) => ({ id: S.st[j].id, d }));
+
+Promise.all([
+  fetch("data/stations.json").then(r => r.json()),
+  fetch("data/muni.topojson").then(r => r.json()).catch(() => null),
+]).then(([st, topo]) => {
+  S = st; IND = S.meta.indicators;
+  // 表示順: 駅・施設 → 内側の輪 → 外側の輪
+  IND.forEach((d, i) => d.i = i);
+  GROUPS = S.meta.groups;
+  const gn = {}; IND.forEach(d => gn[d.group] = (gn[d.group] || 0) + 1);
+  W = IND.map(d => 1 / gn[d.group]);  // 距離計算での重み²（分野ごとに 1/√指標数 の二乗）
+  S.st.forEach(s => byId[s.id] = s);
+  const ds = S.st.flatMap(s => s.far.map(x => x[1])).sort((x, y) => x - y);
+  D_REF = ds[Math.floor(ds.length * .99)];
+  $("#nSt").textContent = S.st.length.toLocaleString();
+  $("#nInd").textContent = IND.length;
+  const nt = new URLSearchParams(location.search).get("near") === "1";
+  NEAR = nt; $("#nearT").checked = nt;
+  initMap(topo); buildDialogs(); renderEmpty();
+});
+
+function initPad() { return innerWidth <= 760 ? { top: 130, bottom: 90, left: 10, right: 10 } : { top: 30, bottom: 100, left: 300, right: 60 }; }
+function pad() {
+  const sh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sheet-h")) || $("#sheet").getBoundingClientRect().height, narrow = innerWidth <= 760;
+  const p = { top: narrow ? 120 : 80, bottom: Math.min(sh + 30, innerHeight * .6), left: narrow ? 30 : 380, right: narrow ? 30 : 80 };
+  const fit = (a, b, n) => { const k = Math.min(1, Math.max(0, n - 60) / (p[a] + p[b])); p[a] *= k; p[b] *= k; };
+  fit("top", "bottom", innerHeight); fit("left", "right", innerWidth);
+  return p;
+}
+
+function initMap(topo) {
+  map = new maplibregl.Map({
+    container: "map",
+    style: { version: 8, glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf", sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#0b0e13" } }] },
+    bounds: [[128.6, 30.6], [146.2, 45.6]], fitBoundsOptions: { padding: initPad() }, minZoom: 3.5, maxZoom: 15, attributionControl: false,
+    localIdeographFontFamily: "'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Noto Sans CJK JP', 'Yu Gothic', Meiryo, sans-serif", dragRotate: false, pitchWithRotate: false,
+  });
+  map.touchZoomRotate.disableRotation();
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+  map.addControl(new maplibregl.AttributionControl({ compact: innerWidth <= 760, customAttribution: "e-Stat・国土数値情報を加工" }), "bottom-right");
+  map.on("load", () => {
+    if (topo) {
+      map.addSource("muni", { type: "geojson", data: topojson.feature(topo, topo.objects[Object.keys(topo.objects)[0]]) });
+      map.addLayer({ id: "land", type: "fill", source: "muni", paint: { "fill-color": "#171b23" } });
+      map.addLayer({ id: "edge", type: "line", source: "muni", paint: { "line-color": "#262c37", "line-width": ["interpolate", ["linear"], ["zoom"], 4, .2, 10, .8] } });
+    }
+    map.addSource("st", { type: "geojson", promoteId: "id", data: { type: "FeatureCollection", features: S.st.map(s => ({ type: "Feature", properties: { id: s.id, name: s.name, c: s.col, p: s.raw[0] || 0 }, geometry: { type: "Point", coordinates: s.ll } })) } });
+    map.addSource("links", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    map.addLayer({ id: "links", type: "line", source: "links", layout: { "line-cap": "round" }, paint: { "line-color": "#ffffff", "line-width": 1, "line-opacity": .45, "line-dasharray": [1, 2] } });
+    // 乗降客数が多い駅ほど少し大きく
+    const rad = (z, k) => ["*", k, ["+", 1, ["*", .12, ["ln", ["+", 1, ["get", "p"]]]]], z];
+    map.addLayer({ id: "dots", type: "circle", source: "st", layout: { "circle-sort-key": ["get", "p"] }, paint: {
+      "circle-color": ["get", "c"],
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, rad(1, .7), 8, rad(1, 1.5), 12, rad(1, 3.2), 15, rad(1, 5)],
+      "circle-opacity": ["case", ["boolean", ["feature-state", "dim"], false], .25, 1],
+      "circle-stroke-color": ["case", ["boolean", ["feature-state", "sel"], false], "#ffffff", ["boolean", ["feature-state", "hov"], false], "#ffffff", "#0b0e13"],
+      "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 4, ["case", ["boolean", ["feature-state", "sel"], false], 2, ["boolean", ["feature-state", "hov"], false], 1.5, 0], 9, ["case", ["boolean", ["feature-state", "sel"], false], 2, ["boolean", ["feature-state", "hov"], false], 1.5, .5]],
+    } });
+    map.addLayer({ id: "labels", type: "symbol", source: "st", minzoom: LABEL_MINZOOM,
+      layout: { "text-field": ["get", "name"], "text-font": ["Open Sans Semibold"], "text-size": ["interpolate", ["linear"], ["zoom"], LABEL_MINZOOM, 10, 14, 13], "text-variable-anchor": ["top", "bottom", "left", "right"], "text-radial-offset": .8, "text-padding": 2, "symbol-sort-key": ["-", ["get", "p"]] },
+      paint: { "text-color": "#eef1f6", "text-halo-color": "rgba(11, 14, 19, .85)", "text-halo-width": 1.3 } });
+    const tip = $("#tip");
+    let hov = null;
+    map.on("mousemove", "dots", e => {
+      const s = byId[e.features[0].properties.id];
+      map.getCanvas().style.cursor = "pointer";
+      if (hov !== s.id) { if (hov) map.setFeatureState({ source: "st", id: hov }, { hov: false }); hov = s.id; map.setFeatureState({ source: "st", id: hov }, { hov: true }); }
+      tip.style.display = "flex"; tip.style.left = (e.originalEvent.clientX + 14) + "px"; tip.style.top = (e.originalEvent.clientY + 14) + "px";
+      tip.innerHTML = `<span style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:${s.col}"></span>${esc(label(s))}</span><span style="color:var(--mut);font-size:11px;margin-left:18px">${esc(where(s))} · ${esc(lines(s).slice(0, 3).join("・"))}${lines(s).length > 3 ? " ほか" : ""}</span>`;
+    });
+    map.on("mouseleave", "dots", () => { tip.style.display = "none"; map.getCanvas().style.cursor = ""; if (hov) map.setFeatureState({ source: "st", id: hov }, { hov: false }); hov = null; });
+    map.on("click", "dots", e => select(e.features[0].properties.id, { fly: false }));
+    window.__mapReady = true;
+    const h = decodeURIComponent(location.hash.slice(1));
+    if (byId[h]) select(h, { push: false });
+  });
+}
+
+function setStates(on) {
+  if (!selected) return;
+  map.setFeatureState({ source: "st", id: selected }, { sel: on });
+}
+function select(id, { fly = true, push = true } = {}) {
+  const s = byId[id];
+  if (!s) return;
+  setStates(false);
+  selected = id; setStates(true);
+  const nb = nbOf(s);
+  cmp = nb[0].id;
+  if (innerWidth <= 760 && !$("#about").classList.contains("min")) { $("#aboutToggle").click(); layoutSearch(); }
+  drawSel(s, nb);
+  if ($("#sheet").dataset.state === "peek") setSheet("half");
+  if (fly) map.flyTo({ center: s.ll, zoom: Math.max(map.getZoom(), 10), padding: pad(), duration: 700 });
+  if (push && location.hash.slice(1) !== id) history.replaceState(null, "", location.search + "#" + id);
+  document.title = `${label(s)}に似ている駅 | 駅圏 統計類似色マップ`;
+  renderSelected();
+}
+function drawSel(s, nb) {
+  map.getSource("links").setData({ type: "FeatureCollection", features: nb.map(n => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [s.ll, byId[n.id].ll] } })) });
+  markers.forEach(m => m.remove()); markers = [];
+  const mk = (id, cls, txt) => {
+    const el = document.createElement("div"); el.className = "mk " + cls; el.textContent = txt; el.dataset.code = id;
+    el.title = label(byId[id]);
+    el.onclick = ev => { ev.stopPropagation(); id === selected ? null : setCmp(id, true); };
+    el.ondblclick = ev => { ev.stopPropagation(); select(id); };
+    markers.push(new maplibregl.Marker({ element: el }).setLngLat(byId[id].ll).addTo(map));
+  };
+  nb.slice().reverse().forEach((n, i, arr) => mk(n.id, n.id === cmp ? "on" : "", arr.length - i));
+  mk(s.id, "self", "");
+}
+function clearSel() {
+  if (!selected) return;
+  setStates(false);
+  selected = cmp = null;
+  map.getSource("links").setData({ type: "FeatureCollection", features: [] });
+  markers.forEach(m => m.remove()); markers = [];
+  history.replaceState(null, "", location.pathname + location.search);
+  document.title = "駅圏 統計類似色マップ";
+  renderEmpty(); setSheet("peek");
+}
+$("#nearT").onchange = e => {
+  NEAR = e.target.checked;
+  const u = new URLSearchParams(location.search); NEAR ? u.set("near", "1") : u.delete("near");
+  history.replaceState(null, "", location.pathname + (u.toString() ? "?" + u : "") + location.hash);
+  if (selected) { const s = byId[selected], nb = nbOf(s); if (!nb.some(n => n.id === cmp)) cmp = nb[0].id; drawSel(s, nb); renderSelected(); }
+};
+
+/* ---- シート ---- */
+function setSheet(s) {
+  const el = $("#sheet");
+  el.dataset.state = s;
+  const narrow = innerWidth <= 760;
+  const h = s === "peek" ? 64 : s === "half" ? Math.round(innerHeight * (narrow ? .55 : .46)) : Math.round(innerHeight - (narrow ? 120 : 96));
+  document.documentElement.style.setProperty("--sheet-h", h + "px");
+  if (s === "full" && !$("#about").classList.contains("min")) $("#aboutToggle").click();
+}
+$("#grab").onclick = e => {
+  if (e.target.closest("[data-clear]")) return clearSel();
+  const s = $("#sheet").dataset.state;
+  setSheet(s === "peek" ? "half" : s === "half" ? "full" : "peek");
+};
+$("#grab").onkeydown = e => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); $("#grab").click(); } };
+addEventListener("resize", () => setSheet($("#sheet").dataset.state));
+
+function renderEmpty() {
+  $("#ttl").innerHTML = `<div style="min-width:0"><div class="eyebrow">Select a station</div><div class="sub" style="color:var(--tx);font-size:13px">地図の駅をクリックするか、検索窓から駅を選んでください</div></div>`;
+  $("#left").innerHTML = `<div class="sec-h"><h3>試してみる</h3></div><div class="examples">${EXAMPLES.map(n => {
+    const s = S.st.filter(x => x.name === n).sort((x, y) => (y.raw[0] || 0) - (x.raw[0] || 0))[0];
+    return s ? `<button data-go="${s.id}"><span class="dot" style="background:${s.col};display:inline-block;vertical-align:-1px;margin-right:6px"></span>${esc(n)}</button>` : "";
+  }).join("")}</div>
+  <p class="note" style="margin-top:16px">駅を選ぶと、駅の周りの統計が似ている駅 Top${S.meta.k} と、どの指標が似ていてどこが違うのかを表示します。</p>`;
+  $("#right").innerHTML = `<div class="sec-h"><h3>このマップの読み方</h3></div>
+  <div class="li"><span>色が近い</span><span class="r">${IND.length}指標の傾向が近い（色そのものは評価や順位ではありません）</span></div>
+  <div class="li"><span>赤寄り／青寄り</span><span class="r">駅の周りが都市的／農山村的な傾向の目安</span></div>
+  <div class="li"><span>点の大きさ</span><span class="r">乗降客数が多いほど大きい</span></div>
+  <div class="li"><span>Top${S.meta.k}</span><span class="r">既定では 2km 以内の駅を除外（左上で切り替え）</span></div>
+  <div class="li"><span>同じ名前の駅</span><span class="r">乗り換えできる駅は 1 駅にまとめています</span></div>`;
+  $("#sheet").querySelectorAll("[data-go]").forEach(b => b.onclick = () => select(b.dataset.go));
+}
+
+/* ---- ルールベースの説明文: 指標ごとの「高い/低い」の言い方を文型に当てはめる ---- */
+const PHRASE = {
+  pax: ["乗降客が多い", "乗降客が少ない"],
+  n_lines: ["乗り入れる路線が多い", "乗り入れる路線が少ない"],
+  nearest_station_km: ["隣の駅まで遠い", "隣の駅まで近い"],
+  stations_2km: ["2km以内に駅が多い", "2km以内の駅が少ない"],
+  hospitals_2km: ["2km以内に病院が多い", "2km以内の病院が少ない"],
+  clinics_1km: ["1km以内に診療所が多い", "1km以内の診療所が少ない"],
+  density: ["人が多く住んでいる", "住んでいる人が少ない"],
+  child: ["子ども（15歳未満）の割合が高い", "子ども（15歳未満）の割合が低い"],
+  old: ["65歳以上の割合が高い", "65歳以上の割合が低い"],
+  foreign: ["外国人の割合が高い", "外国人の割合が低い"],
+  single: ["単身世帯の割合が高い", "単身世帯の割合が低い"],
+  young_single: ["20代の一人暮らしが多い", "20代の一人暮らしが少ない"],
+  old_single: ["高齢者の一人暮らしが多い", "高齢者の一人暮らしが少ない"],
+  building: ["建物の用地が多い", "建物の用地が少ない"],
+  agri: ["農地が多い", "農地が少ない"],
+  forest: ["森林・荒地が多い", "森林・荒地が少ない"],
+  road: ["道路・鉄道の用地が多い", "道路・鉄道の用地が少ない"],
+  other: ["公園・学校などの用地が多い", "公園・学校などの用地が少ない"],
+};
+const phr = (i, up) => (RING_PRE[IND[i].ring] || "") + PHRASE[base(IND[i].key)][up ? 0 : 1];
+const shortLabel = s => s.replace(/^.*?: /, "").replace(/[（(].*?[）)]/g, "");
+const ringLabel = d => (d.ring ? RING_NAME[d.ring] + " · " : "") + shortLabel(d.label);
+const quote = xs => xs.map(t => `「${t}」`).join("");
+const isImp = (o, i) => o.imp.includes(i);
+const IMP_NOTE = `（挙げた指標の一部は、統計が欠けているため、ほかの指標が似た駅の値から推定しています）`;
+const proseNote = () => `${IND.length}指標の数値を決まった文型で言い換えた要約です。観光や通勤などの移動目的は指標に含まれていません。似ている理由（因果関係）を示すものでもありません。`;
+
+// 全駅の中央値からの偏差が大きい指標を、同じ分野から2つまでに絞って選ぶ
+function salient(s, n = 3, min = 1) {
+  const per = {};
+  return IND.map((d, i) => ({ i, s: Math.abs(s.z[i]) })).filter(x => x.s >= min).sort((x, y) => y.s - x.s)
+    .filter(x => (per[IND[x.i].group] = (per[IND[x.i].group] || 0) + 1) <= 2).slice(0, n);
+}
+// 駅前と周辺の人口密度・建物用地を比べ、駅を中心とした街の広がり方を一文にする
+function structure(s) {
+  const k = key => IND.findIndex(d => d.key === key);
+  const d0 = s.raw[k("r0_density")], d2 = s.raw[k("r2_density")], b0 = s.raw[k("r0_building")], b2 = s.raw[k("r2_building")], a2 = s.raw[k("r2_agri")], f2 = s.raw[k("r2_forest")];
+  if (d0 == null || d2 == null || b0 == null || b2 == null) return "";
+  const outer = a2 >= .5 ? "農地" : f2 >= .5 ? "森林" : a2 + f2 >= .5 ? "農地と森林" : null;
+  if (b0 >= .6 && outer) return `駅前は建物が建て込んでいますが、1〜2km離れると${outer}が半分以上を占めます。`;
+  if (b0 >= .6 && b2 >= .6) return d0 >= d2 * 1.3 ? `駅前に人が集まって住み、1〜2km先まで市街地が続いています。` : d2 >= d0 * 1.3 ? `駅前より1〜2kmの周辺のほうが人口密度が高く、住まいは駅から少し離れた場所に多くあります。` : `駅前から1〜2km先まで、同じくらいの密度の市街地が続いています。`;
+  if (b0 < .3 && outer) return `駅前でも建物の用地は3割に満たず、周りには${outer}が広がっています。`;
+  return "";
+}
+function describeStation(s) {
+  const top = salient(s);
+  let t = `${esc(label(s))}（${esc(where(s))}）は、${esc(lines(s).slice(0, 3).join("・"))}${lines(s).length > 3 ? ` など${lines(s).length}路線` : ""}の駅です。`;
+  t += structure(s);
+  t += top.length ? `全国の駅と比べると、${esc(quote(top.map(x => phr(x.i, s.z[x.i] > 0))))}点が目立ちます。` : `多くの指標が全国の駅の中央値に近い駅です。`;
+  if (top.some(x => isImp(s, x.i))) t += IMP_NOTE;
+  if (isImp(s, 0)) t += `乗降客数は公表値がないため、ほかの指標が似た駅の値から推定しています。`;
+  return t;
+}
+function describePair(a, b, c, d2, byG, common, diff, rank) {
+  const A_ = esc(label(a)), B_ = esc(label(b));
+  const cm = common.slice(0, 3);
+  const cites = [];
+  let t = `${B_}は、${A_}に似ている駅の${rank}位です。`;
+  if (km(a.ll, b.ll) <= S.meta.excl_km) t += `2km以内にある駅なので、駅圏の外側の輪が重なっています。`;
+  if (cm.length) { t += `特に、どちらも${esc(quote(cm.map(x => phr(x.i, a.z[x.i] > 0))))}点が共通しています。`; cites.push(...cm.map(x => x.i)); }
+  else t += `どちらも多くの指標が全国の駅の中央値に近いことが、似ている主な理由です。`;
+  const kMax = byG.indexOf(Math.max(...byG)), kMin = byG.indexOf(Math.min(...byG));
+  t += `${IND.length}指標の差のうち、いちばん大きいのは「${esc(GROUPS[kMax])}」の分野（${pct(byG[kMax])}）で、いちばん小さいのは「${esc(GROUPS[kMin])}」の分野（${pct(byG[kMin])}）です。`;
+  const parts = [];
+  for (const o of [a, b]) {
+    const xs = diff.slice(0, 3).filter(x => x.s / d2 >= .05 && (a.z[x.i] > b.z[x.i]) === (o === a));
+    if (xs.length) { parts.push(`${esc(label(o))}のほうが${esc(quote(xs.map(x => phr(x.i, true))))}`); cites.push(...xs.map(x => x.i)); }
+  }
+  if (parts.length) t += `個別の指標では、${parts.join("、")}という違いがあります。`;
+  if (cites.some(i => isImp(a, i) || isImp(b, i))) t += IMP_NOTE;
+  return t;
+}
+function prose(text, col) {
+  return `<div class="prose" style="border-left-color:${col}"><p>${text}</p><p class="pn">${proseNote()}</p></div>`;
+}
+
+function renderSelected() {
+  const s = byId[selected];
+  const nl = lines(s).length;
+  $("#ttl").innerHTML = `<span class="big" style="background:${s.col}"></span>
+    <div style="min-width:0"><h2>${esc(label(s))}</h2>
+    <div class="sub">${esc(where(s))} · ${esc(lines(s).slice(0, 3).join("・"))}${nl > 3 ? ` ほか${nl - 3}路線` : ""}${s.raw[0] != null && !isImp(s, 0) ? ` · 乗降客数 ${fmt(s.raw[0])}人/日` : ""}</div></div>
+    <button class="icon-btn" data-clear aria-label="選択を解除" title="選択を解除"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 2l8 8M10 2l-8 8"/></svg></button>`;
+  renderLeft(s); renderRight(s);
+}
+function traits(s) {
+  return IND.map((d, i) => ({ i, s: Math.abs(s.z[i]) })).filter(x => x.s >= 1).sort((x, y) => y.s - x.s).slice(0, 6)
+    .map(x => `<span class="chip" title="全駅の中央値からの標準化偏差 ${s.z[x.i] > 0 ? "+" : ""}${s.z[x.i].toFixed(1)}">${esc(ringLabel(IND[x.i]))} <b class="${s.z[x.i] > 0 ? "up" : "dn"}">${s.z[x.i] > 0 ? "高い" : "低い"}</b></span>`).join("");
+}
+function renderLeft(s) {
+  const t = traits(s);
+  let h = `<p class="lead">${describeStation(s)}</p><div class="sec-h"><h3>似ている駅 Top${S.meta.k}</h3><small>${NEAR ? "2km以内も含む" : "2km以内は除外"} · クリックで比較 · ⤴で移動</small></div><div class="cards">`;
+  nbOf(s).forEach((n, i) => {
+    const b = byId[n.id], dist = km(s.ll, b.ll);
+    const w = Math.max(.04, 1 - n.d / D_REF);
+    h += `<div class="card${n.id === cmp ? " on" : ""}" data-code="${n.id}" role="button" tabindex="0" aria-label="${i + 1}位 ${esc(label(b))}">
+      <div class="rk num">${i + 1}</div>
+      <div class="nm"><span class="dot" style="background:${b.col}"></span><span>${esc(b.name)}<small style="color:var(--mut);font-weight:400;margin-left:6px">${esc(lines(b)[0])}${lines(b).length > 1 ? " ほか" : ""}</small></span></div>
+      <button class="icon-btn go" data-go="${n.id}" title="${esc(label(b))}を選択" aria-label="${esc(label(b))}を選択">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 3h6v6M11 3L3 11"/></svg></button>
+      <div class="meta num"><span>${esc(where(b))}</span><span>距離 ${n.d.toFixed(2)}</span><span>${dist < 10 ? dist.toFixed(1) : Math.round(dist).toLocaleString()} km</span></div>
+      <div class="meter"><i style="width:${w * 100}%;background:${b.col}"></i></div>
+    </div>`;
+  });
+  h += `</div>` + (t ? `<div class="sec-h" style="margin-top:18px"><h3>この駅の特徴</h3><small>全駅の中央値との差が大きい指標</small></div><div class="traits">${t}</div>` : "");
+  h += `<p class="note" style="margin-top:12px">距離は${IND.length}指標の重み付きユークリッド距離（小さいほど似ている）。バーは全駅の Top${S.meta.k} 距離の99パーセンタイルを基準にした近さです。</p>`;
+  $("#left").innerHTML = h;
+}
+function setCmp(id, scroll) {
+  if (!selected || id === cmp) return;
+  cmp = id;
+  document.querySelectorAll(".card").forEach(c => c.classList.toggle("on", c.dataset.code === id));
+  markers.forEach(m => m.getElement().classList.toggle("on", m.getElement().dataset.code === id));
+  if (scroll) { const c = document.querySelector(`.card[data-code="${id}"]`); c && c.scrollIntoView({ block: "nearest", behavior: "smooth" }); if ($("#sheet").dataset.state === "peek") setSheet("half"); }
+  renderRight(byId[selected]);
+}
+$("#left").addEventListener("click", e => {
+  const go = e.target.closest("[data-go]");
+  if (go) { e.stopPropagation(); select(go.dataset.go); return; }
+  const c = e.target.closest(".card");
+  if (c) setCmp(c.dataset.code);
+});
+$("#left").addEventListener("dblclick", e => { const c = e.target.closest(".card"); if (c) select(c.dataset.code); });
+$("#left").addEventListener("keydown", e => { const c = e.target.closest(".card"); if (c && e.key === "Enter") setCmp(c.dataset.code); });
+
+function renderRight(a) {
+  const b = cmp ? byId[cmp] : null;
+  if (!b) { $("#right").innerHTML = profileTable(a, null); return; }
+  const nb = nbOf(a), rank = nb.findIndex(n => n.id === b.id) + 1, d = nb[rank - 1].d;
+  const c = IND.map((x, i) => W[i] * (a.z[i] - b.z[i]) ** 2);
+  const d2 = c.reduce((s, v) => s + v, 0) || 1;
+  const byG = GROUPS.map(g => IND.reduce((s, x, i) => s + (x.group === g ? c[i] : 0), 0) / d2);
+  const gmax = Math.max(...byG);
+  const common = IND.map((x, i) => ({ i, s: Math.sign(a.z[i]) === Math.sign(b.z[i]) ? Math.min(Math.abs(a.z[i]), Math.abs(b.z[i])) : 0 }))
+    .filter(x => x.s >= .5).sort((x, y) => y.s - x.s).slice(0, 5);
+  const diff = IND.map((x, i) => ({ i, s: c[i] })).sort((x, y) => y.s - x.s).slice(0, 5);
+  $("#right").innerHTML = `<div class="vs"><span class="who"><span class="sw" style="background:${a.col}"></span>${esc(a.name)}</span><span class="x">×</span>
+    <span class="who"><span class="sw" style="background:${b.col}"></span>${esc(b.name)}</span>
+    <span class="chip num" style="margin-left:auto">${rank}位 · 距離 ${d.toFixed(2)}</span></div>
+  ${prose(describePair(a, b, c, d2, byG, common, diff, rank), b.col)}
+  <div class="cmpgrid">
+    <div class="box"><h4>共通の特徴<span class="badge c">どちらも全駅の中央値から同じ向きに離れている</span></h4>
+      ${common.length ? common.map(x => `<div class="li"><span>${esc(ringLabel(IND[x.i]))}<span class="${a.z[x.i] > 0 ? "up" : "dn"}">　どちらも${a.z[x.i] > 0 ? "高い" : "低い"}</span></span><span class="r num">${fmtI(x.i, a.raw[x.i])} / ${fmtI(x.i, b.raw[x.i])}</span></div>`).join("") : `<p class="note">該当なし（どちらも全国の駅の平均的な値）</p>`}
+    </div>
+    <div class="box"><h4>主な違い<span class="badge d">距離への寄与が大きい指標</span></h4>
+      ${diff.map(x => `<div class="li"><span>${esc(ringLabel(IND[x.i]))}</span><span class="r num">${fmtI(x.i, a.raw[x.i])} / ${fmtI(x.i, b.raw[x.i])}　<b style="color:var(--warn)">${pct(c[x.i] / d2)}</b></span></div>`).join("")}
+    </div>
+    <div class="box" style="grid-column:1/-1"><h4>分野別の差（距離²の内訳）<span class="note" style="margin-left:8px;font-weight:400">分野の重みは均等なので、長い分野ほど差が大きい</span></h4>
+      ${GROUPS.map((g, k) => `<div class="dom"><span>${esc(g)}</span><span class="tr"><i style="width:${byG[k] / gmax * 100}%;background:${GROUP_COLORS[k % 7]}"></i></span><span class="v num">${pct(byG[k])}</span></div>`).join("")}
+    </div>
+  </div>` + profileTable(a, b);
+}
+function profileTable(a, b) {
+  const ca = "#ffffff", cb = b ? b.col : null;
+  let h = `<div class="sec-h"><h3>指標プロファイル</h3><small>全駅の中央値からの標準化偏差（±4）</small></div>
+    <div class="legendrow"><span><span class="dot" style="background:${ca}"></span>${esc(a.name)}</span>${b ? `<span><span class="dot" style="background:${cb}"></span>${esc(b.name)}</span>` : ""}<span>｜ 中央の線＝全駅の中央値 · 右の数値は実際の値${b ? "（左／右）" : ""} · *は近傍補完</span></div><table class="prof">`;
+  const x = z => 50 + Math.max(-4, Math.min(4, z)) / 4 * 48;
+  for (const r of RING_ORDER) {
+    h += `<tr class="g"><td colspan="3">${esc(RING_NAME[r])}</td></tr>`;
+    IND.filter(d => (d.ring || "") === r).forEach(ind => {
+      const i = ind.i, za = a.z[i], zb = b ? b.z[i] : null;
+      const imp = o => o && isImp(o, i) ? "*" : "";
+      let bar = `<div class="db"><div class="ax"></div><div class="c0"></div>`;
+      if (zb != null) bar += `<div class="seg" style="left:${Math.min(x(za), x(zb))}%;width:${Math.abs(x(za) - x(zb))}%"></div><div class="p" style="left:${x(zb)}%;background:${cb}"></div>`;
+      bar += `<div class="p" style="left:${x(za)}%;background:${ca}"></div></div>`;
+      h += `<tr><td class="lb">${esc(r ? ind.label.replace(/^.*?: /, "") : ind.label)}</td><td>${bar}</td><td class="vals num">${fmtI(i, a.raw[i])}${imp(a)}${b ? ` / ${fmtI(i, b.raw[i])}${imp(b)}` : ""}</td></tr>`;
+    });
+  }
+  return h + `</table>`;
+}
+
+/* ---- 検索 ---- */
+const q = $("#q"), sugg = $("#sugg");
+let hits = [], hi = 0;
+const norm = s => s.normalize("NFKC").replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)).replace(/\s/g, "").replace(/駅$/, "");
+function search(v) {
+  const t = norm(v);
+  if (!t) return [];
+  const sc = s => { const n = norm(s.name); return n === t ? 0 : n.startsWith(t) ? 1 : n.includes(t) ? 2 : norm(s.muni + s.lines).includes(t) ? 3 : 9; };
+  return S.st.map(s => [sc(s), s]).filter(x => x[0] < 9).sort((x, y) => x[0] - y[0] || (y[1].raw[0] || 0) - (x[1].raw[0] || 0)).slice(0, 8).map(x => x[1]);
+}
+function renderSugg() {
+  const open = q.value.trim() !== "";
+  sugg.classList.toggle("open", open); q.setAttribute("aria-expanded", open);
+  if (!open) return;
+  sugg.innerHTML = hits.length ? hits.map((s, i) => `<button role="option" tabindex="-1" aria-selected="${i === hi}" data-code="${s.id}"><span class="dot" style="background:${s.col}"></span>${esc(s.name)}<span class="pref">${esc(where(s))} · ${esc(lines(s)[0])}</span></button>`).join("")
+    : `<div class="empty">該当する駅がありません</div>`;
+}
+q.addEventListener("input", () => { hits = search(q.value); hi = 0; renderSugg(); });
+q.addEventListener("keydown", e => {
+  if (e.isComposing || e.keyCode === 229) return;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); if (hits.length) { hi = (hi + (e.key === "ArrowDown" ? 1 : -1) + hits.length) % hits.length; renderSugg(); } }
+  else if (e.key === "Enter") { if (hits[hi]) pick(hits[hi].id); }
+  else if (e.key === "Escape") { e.stopPropagation(); q.value = ""; hits = []; renderSugg(); q.blur(); }
+});
+q.addEventListener("focus", () => { $("#kbd").style.display = "none"; if (q.value) renderSugg(); });
+q.addEventListener("blur", () => { $("#kbd").style.display = ""; setTimeout(() => sugg.classList.remove("open"), 150); });
+sugg.addEventListener("mousedown", e => { const b = e.target.closest("[data-code]"); if (b) { e.preventDefault(); pick(b.dataset.code); } });
+function pick(id) { q.value = ""; hits = []; renderSugg(); q.blur(); select(id); }
+addEventListener("keydown", e => {
+  if (e.key === "/" && document.activeElement !== q && !$("#dlg").open) { e.preventDefault(); q.focus(); }
+  else if (e.key === "Escape" && !$("#dlg").open && document.activeElement !== q && selected) clearSel();
+});
+addEventListener("hashchange", () => { const h = decodeURIComponent(location.hash.slice(1)); if (byId[h] && h !== selected) select(h, { push: false }); });
+
+/* ---- インフォパネル ---- */
+$("#aboutToggle").onclick = () => { const m = $("#about").classList.toggle("min"); $("#aboutToggle").style.transform = m ? "rotate(180deg)" : ""; };
+if (innerWidth <= 760) { $("#about").classList.add("min"); $("#aboutToggle").style.transform = "rotate(180deg)"; }
+function layoutSearch() { if (innerWidth <= 760) $("#searchbox").style.top = ($("#about").getBoundingClientRect().bottom + 8) + "px"; else $("#searchbox").style.top = ""; }
+new ResizeObserver(layoutSearch).observe($("#about")); addEventListener("resize", layoutSearch);
+
+/* ---- ダイアログ ---- */
+const dlg = $("#dlg");
+function openDlg(tab) {
+  document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === tab));
+  document.querySelectorAll(".dlg-b section").forEach(s => s.classList.toggle("on", s.dataset.sec === tab));
+  if (!dlg.open) dlg.showModal();
+  $(".dlg-b").scrollTop = 0;
+}
+document.querySelectorAll("[data-open]").forEach(b => b.onclick = () => openDlg(b.dataset.open));
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => openDlg(b.dataset.tab));
+$("#dlgClose").onclick = () => dlg.close();
+dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+
+function buildDialogs() {
+  const k = S.meta.k, nPax = S.st.filter(s => !isImp(s, 0)).length;
+  const byG = GROUPS.map(g => [g, IND.filter(d => d.group === g && (d.ring || "r0") === "r0")]);
+  $("#secMethod").innerHTML = `
+  <h3>何を「似ている」としているか</h3>
+  <p>駅ごとに、駅の周りの人口・世帯・土地利用と、駅そのものの規模を表す ${IND.length} の指標を並べたベクトルを作り、その間の距離が小さい駅を「統計的に似ている」とみなしています。駅の位置そのものは指標に含めていません。市区町村版とは別の指標セットで計算しています。</p>
+  <h3>駅圏の決め方</h3>
+  <ol class="steps">
+    <li><b>同じ名前の駅をまとめる</b> — 国土数値情報の駅グループコードが同じ駅（例: JR と東武の柏駅）を 1 駅にし、位置は各駅の中心、乗降客数は事業者ごとの値の合計にしています</li>
+    <li><b>3 つの輪に分ける</b> — 駅前 0〜500m、徒歩圏 500m〜1km、周辺 1〜2km。半径を 1 つに決めず、駅前の商業地とその外側の住宅地の違いを別々に捉えます</li>
+    <li><b>近い駅どうしの重なり</b> — 駅前 0〜500m だけは最寄り駅に割り当てて重ならないようにし、外側の 2 つの輪は重なりを許しています</li>
+    <li><b>Top${k} から近い駅を除く</b> — 外側の輪が重なる駅どうしは似て当然なので、既定では 2km 以内の駅を Top${k} から除いています。左上の切り替えで含めることもできます</li>
+  </ol>
+  <h3>計算の手順（市区町村版と同じ）</h3>
+  <ol class="steps">
+    <li><b>分布を整える</b> — 右に裾の長い指標は対数・平方根変換し、中央値と四分位範囲でロバスト標準化（±4でクリップ）</li>
+    <li><b>欠損を補う</b> — 乗降客数がない駅や、輪の中の人口が少なく割合を計算できない駅は、ほかの指標が似た駅10件から補完（KNN 補完）。補完した値はプロファイルで * 印。乗降客数の公表値がある駅は ${nPax.toLocaleString()} 駅です</li>
+    <li><b>分野の重みをそろえる</b> — 指標数の多い分野が強く効かないよう、各指標に 1/√(分野の指標数) の重み</li>
+    <li><b>距離と Top${k}</b> — この空間でのユークリッド距離が小さい順に Top${k} を表示</li>
+    <li><b>色にする</b> — UMAP で3次元に圧縮し、OKLab 色空間に割り当て。駅前と徒歩圏の人口密度・徒歩圏の建物用地（＋）と農地・森林（−）の合計が高い方向が赤橙になるよう回転しています</li>
+  </ol>
+  <h3>指標一覧（${IND.length}指標・${GROUPS.length}分野）</h3>
+  <p>人口・世帯・土地利用の 12 指標は、3 つの輪それぞれで計算しています（12 × 3 = 36）。</p>
+  <div class="indgrid">${byG.map(([g, ds], k) => `<div class="box"><h4 style="margin:0 0 6px;font-size:12px;display:flex;gap:6px;align-items:center"><span class="dot" style="background:${GROUP_COLORS[k % 7]}"></span>${esc(g)}</h4><ul>${ds.map(d => `<li>${esc(d.ring ? shortLabel(d.label) + "（3つの輪）" : d.label)}</li>`).join("")}</ul></div>`).join("")}</div>
+  <p class="note" style="margin-top:14px">ソースコードと再現手順: <a href="${REPO}" target="_blank" rel="noopener">GitHub</a></p>`;
+
+  $("#secSrc").innerHTML = `
+  <h3>出典</h3>
+  <div class="tw"><table class="tbl"><tr><th>データ</th><th>使った内容</th></tr>
+  <tr><td><a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-S12-2023.html" target="_blank" rel="noopener">国土数値情報 駅別乗降客数 S12（2023年）</a></td><td>駅の位置・路線・駅グループ、乗降客数（2022年）</td></tr>
+  <tr><td><a href="https://www.e-stat.go.jp/gis" target="_blank" rel="noopener">令和2年国勢調査 250mメッシュ（e-Stat 統計GIS）</a></td><td>人口、年齢構成、外国人、世帯構成</td></tr>
+  <tr><td><a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-L03-b-2021.html" target="_blank" rel="noopener">国土数値情報 土地利用細分メッシュ L03-b（2021年、100m）</a></td><td>建物用地・農地・森林などの割合、人口密度の分母（河川・海を除く陸域）</td></tr>
+  <tr><td><a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-P04-2020.html" target="_blank" rel="noopener">国土数値情報 医療機関 P04（2020年）</a></td><td>病院（2km以内）・診療所（1km以内）の数</td></tr>
+  <tr><td><a href="https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-2024.html" target="_blank" rel="noopener">国土数値情報 行政区域 N03（2024年）</a></td><td>背景の市区町村界</td></tr></table></div>
+  <p class="note">各データを加工して作成しています。地図の描画には MapLibre GL JS を使っています。</p>
+  <h3>注意・限界</h3>
+  <ul>
+    <li>色や Top${k} は駅の周りの統計指標の近さを表すもので、駅や地域の良し悪しではありません。</li>
+    <li><b>観光地かどうか、通勤の目的地か出発地（ベッドタウン）かといった移動目的は指標に含まれていません。</b>たとえば観光地の駅には、人口や土地利用が近い地方の駅が並びます。</li>
+    <li>所得・産業・商業などは駅単位の統計がないため含めていません。駅前の商店街の有無は、建物用地や人口密度から間接的にしか表れません。</li>
+    <li>人口はメッシュの中心が輪に入るかどうかで数えるため、駅前 500m のような小さな輪では誤差が出ます。人口が 100 人未満の輪では割合を計算せず、補完しています。</li>
+    <li>乗降客数のない駅（事業者が公表していない駅など）は推定値です。年次はデータによって異なります（人口 2020年、土地利用 2021年、乗降客数 2022年）。</li>
+  </ul>`;
+}
+</script>
+</body>
+</html>

@@ -4,18 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>市区町村 統計類似色マップ</title>
-<meta name="description" content="e-Statと国土数値情報の49指標で全国1,890の市区町村・区を比較し、統計上似た地域ほど似た色で表した地図です。似ている地域Top10とその理由も確認できます。">
-<title>市区町村 統計類似色マップ</title>
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-FV6J90KCJL"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-FV6J90KCJL');
-</script>
 <meta name="description" content="全国1,890市区町村・区を49の統計指標で比較し、統計的に似た地域ほど似た色で表した地図。各地域に似ている市区町村Top10とその理由を表示します。">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -255,8 +243,8 @@ dialog[open] { display: flex; flex-direction: column; }
       <button class="btn" data-open="method">手法</button>
       <button class="btn" data-open="sens">感度分析</button>
       <button class="btn" data-open="src">出典・注意</button>
+      <a class="btn" href="stations.html" style="text-decoration:none">駅圏版へ</a>
     </div>
-    <p class="note" style="margin-top:12px"><a href="https://github.com/sanskruthiya/municipal-similarity-map" target="_blank" rel="noopener">GitHub</a> ／ <a href="/">柏たなかマップログ トップ</a></p>
   </div>
 </aside>
 
