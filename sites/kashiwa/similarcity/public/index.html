@@ -52,6 +52,7 @@ a { color: #9cc7ff; }
 #about p { margin: 0 0 10px; color: var(--mut); font-size: 12.5px; }
 #about .row { display: flex; gap: 6px; flex-wrap: wrap; }
 #about .toggle { position: absolute; top: 10px; right: 10px; }
+#about:not(.min) { max-height: calc(100vh - 110px); overflow-y: auto; }
 #about.min { width: auto; padding: 10px 46px 10px 14px; }
 #about.min .body { display: none; }
 #about.min h1 { font-size: 14px; margin: 0; }
@@ -60,6 +61,17 @@ a { color: #9cc7ff; }
 .legend .ramp { height: 8px; border-radius: 5px; background: linear-gradient(90deg, #c0533a, #c27a6e, #9b8fa6, #5e93c0, #2f8fb8); }
 .legend .ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--mut); margin-top: 4px; }
 .legend .hint { font-size: 11.5px; color: var(--tx); margin-bottom: 6px; }
+.seg { display: flex; gap: 2px; padding: 2px; margin: 0 0 10px; border: 1px solid var(--line2); border-radius: 10px; }
+.seg button { flex: 1; padding: 5px 6px; border-radius: 8px; font-size: 12px; color: var(--mut); }
+.seg button[aria-pressed="true"] { background: rgba(255, 255, 255, .1); color: var(--tx); }
+.tylist { max-height: 34vh; overflow: auto; margin: 0 -6px; padding: 0 6px; }
+.tylist .gh { font-size: 10.5px; color: var(--mut); margin: 8px 0 2px; display: flex; gap: 6px; align-items: center; }
+.ty { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 4px 6px; border-radius: 7px; font-size: 12px; line-height: 1.35; color: var(--tx); }
+.ty:hover { background: rgba(255, 255, 255, .06); }
+.ty[aria-pressed="true"] { background: rgba(255, 255, 255, .12); }
+.ty .n { margin-left: auto; color: var(--dim); font-size: 11px; }
+.tyfocus { margin: 8px 0 0; padding: 8px 10px; border-left: 3px solid var(--line2); border-radius: 8px; background: rgba(255, 255, 255, .03); font-size: 12px; line-height: 1.65; }
+.tyfocus small { display: block; color: var(--mut); font-size: 11px; margin-top: 4px; }
 
 /* ---- 右上検索 ---- */
 #searchbox { position: fixed; top: 14px; right: 14px; width: 320px; z-index: 9; }
@@ -81,7 +93,7 @@ kbd { font: 11px var(--sans); color: var(--mut); border: 1px solid var(--line2);
 .maplibregl-ctrl-attrib a { color: var(--mut); }
 .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left { bottom: calc(var(--sheet-h) + 18px); transition: bottom .3s; }
 
-#tip { position: fixed; z-index: 4; pointer-events: none; padding: 6px 10px; display: none; font-size: 12px; border-radius: 9px; }
+#tip { position: fixed; z-index: 4; pointer-events: none; padding: 6px 10px; display: none; flex-direction: column; gap: 2px; max-width: 320px; font-size: 12px; border-radius: 9px; }
 .mk { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 600 11px var(--sans); color: #0b0e13; background: #f1f3f7; box-shadow: 0 0 0 2px rgba(11, 14, 19, .85), 0 4px 12px rgba(0, 0, 0, .5); cursor: pointer; transition: transform .15s; }
 .mk:hover, .mk.on { transform: scale(1.25); background: #fff; }
 .mk.self { width: 14px; height: 14px; background: #fff; box-shadow: 0 0 0 3px rgba(11, 14, 19, .9), 0 0 0 6px rgba(255, 255, 255, .35); }
@@ -198,6 +210,7 @@ dialog[open] { display: flex; flex-direction: column; }
 
 /* ---- タッチ端末: 16px 未満の入力欄は iOS がフォーカス時に拡大する ---- */
 @media (pointer: coarse) { #searchbox input { font-size: 16px; } }
+@media (max-width: 760px) { .tylist { max-height: 22vh; } }
 
 /* ---- 狭い画面 ---- */
 @media (max-width: 760px) {
@@ -232,11 +245,12 @@ dialog[open] { display: flex; flex-direction: column; }
   </button>
   <div class="body">
     <p>全国 <b class="num" id="nArea">1,890</b> の市区町村・区を <b class="num" id="nInd">49</b> の統計指標で比べ、<b style="color:var(--tx)">統計的に似ている地域ほど近い色</b>で塗っています。</p>
-    <div class="legend">
-      <div class="hint">色が近い ＝ 指標の傾向が近い</div>
-      <div class="ramp"></div>
-      <div class="ends"><span>赤寄り：都市的</span><span>青寄り：農村的</span></div>
+    <div class="seg" role="group" aria-label="色分け">
+      <button data-mode="sim" aria-pressed="true">統計の類似</button>
+      <button data-mode="major" aria-pressed="false">大分類</button>
+      <button data-mode="minor" aria-pressed="false">小分類</button>
     </div>
+    <div class="legend" id="legend"></div>
     <div class="row">
       <button class="btn" data-open="method">手法</button>
       <button class="btn" data-open="sens">感度分析</button>
@@ -291,18 +305,19 @@ dialog[open] { display: flex; flex-direction: column; }
 const REPO = "https://github.com/sanskruthiya/municipal-similarity-map";
 const EXCL = "#3a3f4a";
 const GROUP_COLORS = ["#6ea8ff", "#ff9f6e", "#7bd88f", "#ff7a8a", "#c79bff", "#5fd4d0", "#f2cf5b"];
-// k-means 12類型の解釈（docs/report.md 第7節）
-const TYPES = { 9: "大都市の都心", 1: "大都市圏の鉄道沿線の郊外", 5: "大都市の周辺区・工業都市", 11: "大都市圏の外側の郊外", 6: "地方の中核都市",
-  0: "製造業のある地方都市", 7: "平地の農村・兼業地域", 2: "高齢化の進む地方の小都市", 3: "病院の少ない農山村", 8: "過疎化の進む山間の町村",
-  10: "北海道などの広域の農業町村", 4: "離島・山あいの観光地などの小さな町村" };
 const LABEL_MINZOOM = 7;  // これより拡大したときだけ市区町村名を表示
 const EXAMPLES = ["柏市", "渋谷区", "軽井沢町", "札幌市中央区", "那覇市", "与那国町"];
 
-let A, IND, W, GROUPS, SENS, map, byCode = {}, CENT = {}, BOUNDS = {}, D_REF = 3, selected = null, cmp = null, markers = [];
+let A, IND, W, GROUPS, SENS, TY = null, MODE = "sim", tyFocus = null, map, byCode = {}, CENT = {}, BOUNDS = {}, D_REF = 3, selected = null, cmp = null, markers = [];
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const label = a => a.name.startsWith(a.pref) ? a.name : `${a.pref} ${a.name}`;
-const color = a => a.excluded ? EXCL : a.colors.umap_oklab;
+const simColor = a => a.excluded ? EXCL : a.colors.umap_oklab;
+const tyOf = a => TY && TY.areas[a.code];
+const majorOf = a => tyOf(a) ? TY.major[tyOf(a)[0]] : null;
+const minorOf = a => tyOf(a) ? TY.minor[tyOf(a)[1]] : null;
+const colorBy = (a, m) => a.excluded || (m !== "sim" && !tyOf(a)) ? EXCL : m === "major" ? majorOf(a).color : m === "minor" ? minorOf(a).color : a.colors.umap_oklab;
+const color = a => colorBy(a, MODE);
 const pct = (v, d = 0) => (v * 100).toFixed(d) + "%";
 function fmt(v) {
   if (v === null || v === undefined) return "–";
@@ -336,8 +351,10 @@ Promise.all([
   fetch("data/attributes.json").then(r => r.json()),
   fetch("data/sensitivity.json").then(r => r.ok ? r.json() : null).catch(() => null),
   fetch("data/labels.json").then(r => r.ok ? r.json() : {}).catch(() => ({})),
-]).then(([topo, attrs, sens, lp]) => {
-  A = attrs; IND = A.meta.indicators; SENS = sens;
+  fetch("data/typology.json").then(r => r.ok ? r.json() : null).catch(() => null),
+]).then(([topo, attrs, sens, lp, ty]) => {
+  A = attrs; IND = A.meta.indicators; SENS = sens; TY = ty;
+  if (!TY) document.querySelector(".seg").style.display = "none";
   GROUPS = [...new Set(IND.map(d => d.group))];
   const gn = {}; IND.forEach(d => gn[d.group] = (gn[d.group] || 0) + 1);
   W = IND.map(d => 1 / gn[d.group]);  // 距離計算での重み²（分野ごとに 1/√指標数 の二乗）
@@ -352,9 +369,9 @@ Promise.all([
     if (!a) return;
     const gi = geomInfo(f.geometry);
     BOUNDS[a.code] = gi.b; CENT[a.code] = lp[a.code] || gi.c;
-    f.properties.color = color(a);
+    f.properties.c_sim = colorBy(a, "sim"); f.properties.c_major = colorBy(a, "major"); f.properties.c_minor = colorBy(a, "minor");
   });
-  initMap(gj); buildDialogs(); renderEmpty();
+  initMap(gj); buildDialogs(); renderLegend(); renderEmpty();
 });
 
 function initMap(gj) {
@@ -370,7 +387,7 @@ function initMap(gj) {
   map.on("load", () => {
     map.addSource("muni", { type: "geojson", data: gj, promoteId: "code" });
     map.addSource("links", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-    map.addLayer({ id: "fill", type: "fill", source: "muni", paint: { "fill-color": ["get", "color"], "fill-opacity": 1 } });
+    map.addLayer({ id: "fill", type: "fill", source: "muni", paint: { "fill-color": ["get", "c_" + MODE], "fill-opacity": 1 } });
     map.addLayer({ id: "edge", type: "line", source: "muni", paint: { "line-color": "#0b0e13", "line-width": ["interpolate", ["linear"], ["zoom"], 4, .15, 9, .8], "line-opacity": .55 } });
     map.addLayer({ id: "links", type: "line", source: "links", layout: { "line-cap": "round" }, paint: { "line-color": "#ffffff", "line-width": 1, "line-opacity": .45, "line-dasharray": [1, 2] } });
     map.addLayer({ id: "hl", type: "line", source: "muni", paint: {
@@ -394,7 +411,8 @@ function initMap(gj) {
       map.getCanvas().style.cursor = "pointer";
       if (hov !== a.code) { if (hov) map.setFeatureState({ source: "muni", id: hov }, { hov: false }); hov = a.code; map.setFeatureState({ source: "muni", id: hov }, { hov: true }); }
       tip.style.display = "flex"; tip.style.left = (e.originalEvent.clientX + 14) + "px"; tip.style.top = (e.originalEvent.clientY + 14) + "px";
-      tip.innerHTML = `<span style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:${color(a)}"></span>${esc(label(a))}</span>`;
+      tip.innerHTML = `<span style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:${color(a)}"></span>${esc(label(a))}</span>` +
+        (MODE !== "sim" && tyOf(a) ? `<span style="color:var(--mut);font-size:11px;margin-left:18px">${esc(MODE === "major" ? majorOf(a).name : minorOf(a).name)}</span>` : "");
     });
     map.on("mouseleave", "fill", () => { tip.style.display = "none"; map.getCanvas().style.cursor = ""; if (hov) map.setFeatureState({ source: "muni", id: hov }, { hov: false }); hov = null; });
     map.on("click", "fill", e => select(e.features[0].properties.code, { fly: false }));
@@ -418,7 +436,8 @@ function select(code, { fly = true, push = true } = {}) {
   selected = code; setStates(code, true);
   cmp = a.neighbors ? a.neighbors[0].code : null; setCmpState(cmp, true);
   const keep = [code, ...(a.neighbors || []).map(n => n.code)];
-  map.setPaintProperty("fill", "fill-opacity", ["case", ["in", ["get", "code"], ["literal", keep]], 1, .28]);
+  tyFocus = null; renderLegend(); applyOpacity();
+  if (innerWidth <= 760 && !$("#about").classList.contains("min")) { $("#aboutToggle").click(); layoutSearch(); }
   setLabelFocus(keep);
   map.getSource("links").setData({ type: "FeatureCollection", features: (a.neighbors || []).filter(n => CENT[n.code]).map(n => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [CENT[code], CENT[n.code]] } })) });
   drawMarkers(a);
@@ -427,6 +446,64 @@ function select(code, { fly = true, push = true } = {}) {
   if (push && location.hash.slice(1) !== code) history.replaceState(null, "", "#" + code);
   document.title = `${label(a)} に似ている市区町村 | 市区町村 統計類似色マップ`;
   renderSelected();
+}
+function applyOpacity() {
+  if (selected) {
+    const a = byCode[selected], keep = [selected, ...(a.neighbors || []).map(n => n.code)];
+    map.setPaintProperty("fill", "fill-opacity", ["case", ["in", ["get", "code"], ["literal", keep]], 1, .28]);
+  } else if (tyFocus) {
+    const [lv, id] = tyFocus, codes = Object.keys(TY.areas).filter(c => TY.areas[c][lv === "major" ? 0 : 1] === id);
+    map.setPaintProperty("fill", "fill-opacity", ["case", ["in", ["get", "code"], ["literal", codes]], 1, .12]);
+  } else map.setPaintProperty("fill", "fill-opacity", 1);
+}
+function setMode(m) {
+  MODE = m;
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === m));
+  if (tyFocus && (m === "sim" || tyFocus[0] !== m)) tyFocus = null;
+  if (map && map.getLayer("fill")) { map.setPaintProperty("fill", "fill-color", ["get", "c_" + m]); applyOpacity(); }
+  renderLegend();
+  selected ? (drawMarkers(byCode[selected]), renderSelected()) : renderEmpty();
+}
+document.querySelectorAll(".seg button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+function tyMembers(lv, id) { return A.areas.filter(a => tyOf(a) && tyOf(a)[lv === "major" ? 0 : 1] === id); }
+// 類型の説明: 構成する市区町村の中央値（標準化値）で目立つ指標と、中央値に近い代表例
+function describeType(lv, id) {
+  const ms = tyMembers(lv, id);
+  const med = IND.map((d, i) => { const v = ms.map(a => a.z[i]).sort((x, y) => x - y), h = v.length >> 1; return v.length % 2 ? v[h] : (v[h - 1] + v[h]) / 2; });
+  const top = salient({ z: med }, 4, .5);
+  const ex = ms.map(a => ({ a, d: IND.reduce((s, d, i) => s + W[i] * (a.z[i] - med[i]) ** 2, 0) })).sort((x, y) => x.d - y.d).slice(0, 5).map(x => x.a.name);
+  return { top, ex, n: ms.length, text: top.length ? `全国の市区町村と比べて、${quote(top.map(x => phr(x.i, med[x.i] > 0)))}地域が多い類型です。` : `多くの指標が全国の中央値に近い類型です。` };
+}
+function renderLegend() {
+  const el = $("#legend");
+  if (MODE === "sim" || !TY) {
+    el.innerHTML = `<div class="hint">色が近い ＝ 指標の傾向が近い</div><div class="ramp"></div><div class="ends"><span>赤寄り：都市的</span><span>青寄り：農村的</span></div>`;
+    return;
+  }
+  const btn = (lv, id, t) => `<button class="ty" data-ty="${lv}:${id}" aria-pressed="${!!tyFocus && tyFocus[0] === lv && tyFocus[1] === id}"><span class="dot" style="background:${t.color}"></span><span>${esc(t.name)}</span><span class="n num">${t.n}</span></button>`;
+  let h = `<div class="hint">${MODE === "major" ? `${TY.major.length}の大分類` : `${TY.minor.length}の小分類（目安）`} · クリックでその類型だけを表示</div><div class="tylist">`;
+  if (MODE === "major") h += TY.major.map((t, i) => btn("major", i, t)).join("");
+  else TY.major.forEach((g, m) => {
+    h += `<div class="gh"><span class="dot" style="background:${g.color};width:7px;height:7px"></span>${esc(g.name)}</div>`;
+    h += TY.minor.map((t, i) => [t, i]).filter(([t]) => t.major === m).map(([t, i]) => btn("minor", i, t)).join("");
+  });
+  h += `</div>`;
+  if (tyFocus) {
+    const [lv, id] = tyFocus, t = TY[lv][id], d = describeType(lv, id);
+    h += `<div class="tyfocus" style="border-left-color:${t.color}"><b>${esc(t.name)}</b>${lv === "minor" ? `<small style="margin:0 0 4px">${esc(TY.major[t.major].name)}</small>` : ""}<div>${esc(d.text)}</div>
+      <small>中央値に近い例: ${d.ex.map(esc).join("、")}<br>分類の安定度 ${t.stability.toFixed(2)}（${t.stability >= .6 ? "安定" : t.stability >= .35 ? "やや不安定" : "不安定。境目があいまいな類型"}）</small></div>`;
+  }
+  const prev = el.querySelector(".tylist"), top = prev ? prev.scrollTop : 0, foc = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.ty;
+  el.innerHTML = h;
+  const list = el.querySelector(".tylist");
+  if (list) list.scrollTop = top;
+  if (foc) { const b = el.querySelector(`[data-ty="${foc}"]`); b && b.focus({ preventScroll: true }); }
+  el.querySelectorAll("[data-ty]").forEach(b => b.onclick = () => {
+    const [lv, id] = b.dataset.ty.split(":"), k = [lv, +id];
+    tyFocus = tyFocus && tyFocus[0] === k[0] && tyFocus[1] === k[1] ? null : k;
+    if (tyFocus && selected) clearSel();
+    renderLegend(); applyOpacity();
+  });
 }
 function setLabelFocus(keep) {
   const inKeep = ["in", ["get", "code"], ["literal", keep]];
@@ -438,7 +515,7 @@ function clearSel() {
   if (!selected) return;
   setStates(selected, false); setCmpState(cmp, false);
   selected = cmp = null;
-  map.setPaintProperty("fill", "fill-opacity", 1);
+  applyOpacity();
   setLabelFocus([]);
   map.getSource("links").setData({ type: "FeatureCollection", features: [] });
   markers.forEach(m => m.remove()); markers = [];
@@ -497,6 +574,7 @@ function renderEmpty() {
   $("#right").innerHTML = `<div class="sec-h"><h3>このマップの読み方</h3></div>
   <div class="li"><span>色が近い</span><span class="r">${IND.length}指標の傾向が近い（色そのものは評価や順位ではありません）</span></div>
   <div class="li"><span>赤寄り／青寄り</span><span class="r">都市的／農村的な傾向の目安（詳しくは「手法」）</span></div>
+  <div class="li"><span>大分類／小分類</span><span class="r">左上で類型ごとの色分けに切り替え。凡例をクリックするとその類型だけを表示</span></div>
   <div class="li"><span>Top${A.meta.k}</span><span class="r">色ではなく元の${IND.length}次元の距離で計算</span></div>
   <div class="li"><span>灰色</span><span class="r">類似度の計算から除外（原発事故の影響が大きい7町村）</span></div>`;
   $("#sheet").querySelectorAll("[data-go]").forEach(b => b.onclick = () => select(b.dataset.go));
@@ -514,7 +592,7 @@ function renderSelected() {
   const s = stabInfo(a.code);
   $("#ttl").innerHTML = `<span class="big" style="background:${color(a)}"></span>
     <div style="min-width:0"><h2>${esc(a.name)}</h2>
-    <div class="sub">${esc(a.pref)}${a.excluded ? "" : ` · 類型: ${esc(TYPES[a.cluster] || "C" + a.cluster)}`}${s ? ` · Top${A.meta.k}の安定度 <b style="color:${s.lv[1]}">${pct(s.st)}（${s.lv[0]}）</b>` : ""}</div></div>
+    <div class="sub">${esc(a.pref)}${tyOf(a) ? ` · 類型: ${esc(majorOf(a).name)} › ${esc(minorOf(a).name)}` : ""}${s ? ` · Top${A.meta.k}の安定度 <b style="color:${s.lv[1]}">${pct(s.st)}（${s.lv[0]}）</b>` : ""}</div></div>
     <button class="icon-btn" data-clear aria-label="選択を解除" title="選択を解除"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 2l8 8M10 2l-8 8"/></svg></button>`;
   if (a.excluded) {
     $("#left").innerHTML = `<div class="sec-h"><h3>類似度の計算から除外</h3></div><p class="note">${esc(A.meta.excluded_note)}。2020年の統計が平常時と大きく異なるため、類似先は表示していません。</p>`;
@@ -595,7 +673,6 @@ function phr(i, up, ...areas) {
   return (PHRASE[k] || [shortLabel(IND[i].label) + "が高い", shortLabel(IND[i].label) + "が低い"])[up ? 0 : 1];
 }
 const quote = xs => xs.map(t => `「${t}」`).join("");
-const typeOf = a => TYPES[a.cluster] || "C" + a.cluster;
 const isImp = (o, i) => !!(o.imputed && o.imputed.includes(IND[i].key));
 const IMP_NOTE = `（挙げた指標の一部は、統計が欠けているため、ほかの指標が似た市区町村の値から推定しています）`;
 const proseNote = () => `${IND.length}指標の数値を決まった文型で言い換えた要約です。似ている理由（因果関係）を示すものではありません。`;
@@ -610,7 +687,9 @@ function salient(a, n = 3, min = 1) {
 function describeArea(a) {
   const top = salient(a);
   const s = stabInfo(a.code);
-  let t = `${esc(a.name)}は「${esc(typeOf(a))}」に分類される地域です。`;
+  const ty = tyOf(a);
+  let t = ty ? `${esc(a.name)}は、大分類「${esc(majorOf(a).name)}」のうち、小分類「${esc(minorOf(a).name)}」に分類される地域です。` : "";
+  if (ty && ty[3] < .2) t += `ただし、小分類の境目に近く、計算の条件によっては別の小分類に入ります。`;
   t += top.length ? `全国の市区町村と比べると、${esc(quote(top.map(x => phr(x.i, a.z[x.i] > 0, a))))}点が目立ちます。`
     : `多くの指標が全国の中央値に近い地域です。`;
   if (top.some(x => isImp(a, x.i))) t += IMP_NOTE;
@@ -625,8 +704,10 @@ function describePair(a, b, c, d2, byG, common, diff) {
   const rank = a.neighbors.findIndex(n => n.code === b.code) + 1;
   const cm = common.slice(0, 3);
   const cites = [];
-  let t = a.cluster === b.cluster ? `${A_}と${B_}は、どちらも「${esc(typeOf(a))}」に分類されます。`
-    : `${A_}は「${esc(typeOf(a))}」、${B_}は「${esc(typeOf(b))}」と類型は異なりますが、${A_}に似ている市区町村の${rank}位です。`;
+  const ta = tyOf(a), tb = tyOf(b);
+  let t = !ta || !tb ? "" : ta[1] === tb[1] ? `${A_}と${B_}は、どちらも「${esc(minorOf(a).name)}」に分類されます。`
+    : ta[0] === tb[0] ? `${A_}と${B_}は、どちらも大分類「${esc(majorOf(a).name)}」に入ります。小分類は、${A_}が「${esc(minorOf(a).name)}」、${B_}が「${esc(minorOf(b).name)}」です。`
+    : `${A_}は「${esc(majorOf(a).name)}」、${B_}は「${esc(majorOf(b).name)}」と大分類は異なりますが、${A_}に似ている市区町村の${rank}位です。`;
   if (cm.length) { t += `特に、どちらも${esc(quote(cm.map(x => phr(x.i, a.z[x.i] > 0, a, b))))}点が共通しています。`; cites.push(...cm.map(x => x.i)); }
   else t += `どちらも多くの指標が全国の中央値に近いことが、似ている主な理由です。`;
   const kMax = byG.indexOf(Math.max(...byG)), kMin = byG.indexOf(Math.min(...byG));
@@ -809,6 +890,18 @@ function buildDialogs() {
   ${mrow("knn_overlap_k10_oklab_color", "近傍10件の一致率（OKLab 色）")}
   ${mrow("dist_spearman_oklab_color", "距離の順位相関（OKLab 色）")}</table></div>
   <p class="note">UMAP は「似たもの同士が近い」関係をよく保ち、PCA（第3主成分までの累積寄与率 ${(e.slice(0, 3).reduce((s, v) => s + v, 0) * 100).toFixed(1)}%）は全体の距離関係をよく保ちます。地図の色は大まかな類型を見るためのもので、個別の類似先は色ではなく元の ${IND.length} 次元で計算した Top${A.meta.k} を参照してください。</p>
+  ${TY ? `<h3>類型（大分類 ${TY.major.length}・小分類 ${TY.minor.length}）</h3>
+  <p>左上の「大分類」「小分類」で、類型ごとの色分けに切り替えられます。類型は Top${A.meta.k} と同じ重み付き ${IND.length} 次元の空間で、次の2段階の k-means で作っています。</p>
+  <ol class="steps">
+    <li><b>大分類</b> — 全体を k-means で ${TY.major.length} 群に分け、「都市度の目安」の平均が高い順に並べて、赤橙（都市的）から青（農村的）の色相を割り当て</li>
+    <li><b>小分類</b> — 大分類ごとに k-means でさらに分割。分割数は大分類内のばらつき（群内平方和）に比例させ、合計 ${TY.minor.length}。小分類は必ず1つの大分類に入り、大分類と同じ色相の明るさ違いで表示</li>
+    <li><b>名前</b> — 各類型の指標の中央値・目立つ指標・代表的な市区町村を見て、人が付けた説明的な名前です</li>
+  </ol>
+  <p>安定度は、指標の 80% をランダムに選んで ${TY.meta.n_boot} 回分類し直し、同じ類型に入る市区町村の集合がどれだけ重なるか（Jaccard 係数の平均、1 で完全一致）を表します。分類全体の一致度（調整ランド指数）は大分類 ${TY.meta.ari_major}、小分類 ${TY.meta.ari_minor} です。</p>
+  <div class="tw"><table class="tbl"><tr><th>類型</th><th class="n">地域数</th><th class="n">安定度</th></tr>
+  ${TY.major.map((g, m) => `<tr><td><span class="dot" style="background:${g.color};display:inline-block;vertical-align:-1px;margin-right:6px"></span><b>${esc(g.name)}</b></td><td class="n num">${g.n}</td><td class="n num">${g.stability.toFixed(2)}</td></tr>` +
+    TY.minor.filter(t => t.major === m).map(t => `<tr><td style="padding-left:24px"><span class="dot" style="background:${t.color};display:inline-block;vertical-align:-1px;margin-right:6px"></span>${esc(t.name)}</td><td class="n num">${t.n}</td><td class="n num">${t.stability.toFixed(2)}</td></tr>`).join("")).join("")}</table></div>
+  <div class="callout"><p>都心や大都市の市街地は安定していますが、地方の町村の小分類は境目があいまいで、指標の選び方によって入れ替わりやすくなっています。類型は連続的な違いに便宜的に線を引いたもので、公式な地域区分ではありません。小分類は目安としてご覧ください。個々の似ている先は類型ではなく Top${A.meta.k} を参照してください。</p></div>` : ""}
   <h3>指標一覧（${IND.length}指標・${GROUPS.length}分野）</h3>
   <div class="indgrid">${byG.map(([g, ds], k) => `<div class="box"><h4 style="margin:0 0 6px;font-size:12px;display:flex;gap:6px;align-items:center"><span class="dot" style="background:${GROUP_COLORS[k % 7]}"></span>${esc(g)}（${ds.length}）</h4><ul>${ds.map(d => `<li>${esc(d.label)}</li>`).join("")}</ul></div>`).join("")}</div>
   <p class="note" style="margin-top:14px">詳しい手順と限界は <a href="${REPO}#readme" target="_blank" rel="noopener">README</a> と <a href="${REPO}/blob/main/docs/report.md" target="_blank" rel="noopener">検証レポート</a> にまとめています。</p>`;
