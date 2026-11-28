@@ -95,6 +95,11 @@ kbd { font: 11px var(--sans); color: var(--mut); border: 1px solid var(--line2);
 .maplibregl-ctrl-attrib a:hover, .maplibregl-ctrl-attrib a:focus-visible { text-decoration-color: currentColor; }
 .maplibregl-ctrl-attrib-button { filter: invert(1); }
 .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left { bottom: calc(var(--sheet-h) + 18px); transition: bottom .3s; }
+/* 詳細パネルを全開にすると地図はほぼ隠れ、右下の出典表示は上の検索欄と重なるので、パネル内の出典行に切り替える */
+html[data-sheet="full"] .maplibregl-ctrl-bottom-right, html[data-sheet="full"] .maplibregl-ctrl-bottom-left { display: none; }
+.sheet-attr { display: none; margin: 0; padding: 8px 18px; border-top: 1px solid var(--line); color: var(--tx); font-size: 11px; line-height: 1.5; }
+.sheet-attr a { color: var(--tx); text-decoration: underline; text-decoration-color: rgba(255, 255, 255, .4); text-underline-offset: 2px; }
+#sheet[data-state="full"] .sheet-attr { display: block; }
 
 #tip { position: fixed; z-index: 4; pointer-events: none; padding: 6px 10px; display: none; flex-direction: column; gap: 2px; max-width: 320px; font-size: 12px; border-radius: 9px; }
 .mk { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 600 11px var(--sans); color: #0b0e13; background: #f1f3f7; box-shadow: 0 0 0 2px rgba(11, 14, 19, .85), 0 4px 12px rgba(0, 0, 0, .5); cursor: pointer; transition: transform .15s; }
@@ -285,6 +290,7 @@ dialog[open] { display: flex; flex-direction: column; }
     <div class="col" id="left"></div>
     <div class="col" id="right"></div>
   </div>
+  <p class="sheet-attr">出典: <a href="https://www.e-stat.go.jp/" target="_blank" rel="noopener">e-Stat</a>・<a href="https://nlftp.mlit.go.jp/ksj/" target="_blank" rel="noopener">国土数値情報（国土交通省）</a>を加工して作成 | <a href="#" data-attr-src>出典・ライセンスの詳細</a></p>
 </section>
 
 <dialog id="dlg">
@@ -393,7 +399,7 @@ function initMap(gj) {
     " | " + `<a href="${REPO}" target="_blank" rel="noopener">ソースコード（GitHub）</a>` +
     " | " + `<a href="#" data-attr-src>出典・ライセンスの詳細</a>`,
   ] }), "bottom-right");
-  map.getContainer().addEventListener("click", e => {
+  document.addEventListener("click", e => {
     if (!e.target.closest("[data-attr-src]")) return;
     e.preventDefault();
     openDlg("src");
@@ -568,6 +574,7 @@ function setSheet(s) {
   const narrow = innerWidth <= 760;
   const h = s === "peek" ? 64 : s === "half" ? Math.round(innerHeight * (narrow ? .55 : .46)) : Math.round(innerHeight - (narrow ? 120 : 96));
   document.documentElement.style.setProperty("--sheet-h", h + "px");
+  document.documentElement.dataset.sheet = s;
   if (s === "full" && !$("#about").classList.contains("min")) $("#aboutToggle").click();
 }
 $("#grab").onclick = e => {
